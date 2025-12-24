@@ -1,0 +1,3995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Project Tracker - Enhanced</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {font-family: 'DIN Office Pro Light', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;background: linear-gradient(135deg, #18518F 0%, #1F3867 100%); min-height: 100vh;padding: 20px;}
+        
+        /* Authentication Styles */
+        .auth-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #18518F 0%, #1F3867 100%); z-index: 10000; align-items: center; justify-content: center; }
+        .auth-container.active { display: flex; }
+        .auth-box { background: white; padding: 50px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; max-width: 400px; }
+        .auth-box h1 { color: #18518F; margin-bottom: 10px; font-size: 32px; }
+        .auth-box p { color: #64748b; margin-bottom: 30px; font-size: 16px; }
+        .google-signin-btn { display: flex; align-items: center; justify-content: center; gap: 12px; background: white; border: 2px solid #e2e8f0; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: 600; color: #2d3748; cursor: pointer; transition: all 0.3s; width: 100%; }
+        .google-signin-btn:hover { border-color: #18518F; box-shadow: 0 4px 12px rgba(24,81,143,0.2); }
+        .google-icon { width: 24px; height: 24px; }
+        .user-info { display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #18518F; }
+        .user-name { font-weight: 600; color: #2d3748; font-size: 14px; }
+        .signout-btn { padding: 6px 14px; background: #f56565; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .signout-btn:hover { background: #e53e3e; }
+        .metadata-text { font-size: 11px; color: #94a3b8; margin-top: 8px; font-style: italic; }
+        .created-by { color: #059669; }
+        .modified-by { color: #ea580c; }
+        
+        .container { max-width: 1800px; margin: 0 auto; }
+        .loading { text-align: center; padding: 40px; color: white; font-size: 18px; }
+        .header { background: white; padding: 25px 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 20px; }
+        .header-controls { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        .header-row-1 { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header-row-2 { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header h1 { color: #2d3748; font-size: 28px; }
+        .header-actions { display: flex; gap: 15px; align-items: center; flex-shrink: 0; }
+        .search-box { padding: 10px 15px; border: 2px solid #e2e8f0; border-radius: 8px; width: 300px; font-size: 14px; }
+        .search-box:focus { 
+    outline: none; 
+    border-color: #18518F; 
+}
+        .view-toggle { display: flex; gap: 5px; background: #f7fafc; padding: 4px; border-radius: 8px; flex-shrink: 0; }
+        .view-btn { padding: 8px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+        .view-btn.active { 
+    background: white; 
+    color: #18518F; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+        .quick-filters { display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+        .quick-filter { padding: 8px 16px; border: 2px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+        .quick-filter.active { 
+    background: #18518F; 
+    color: white; 
+    border-color: #18518F; 
+}
+        .archive-toggle { padding: 8px 16px; border: 2px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+        .archive-toggle.active { background: #ed8936; color: white; border-color: #ed8936; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { 
+    background: #18518F; 
+    color: white; 
+}
+.btn-primary:hover { 
+    background: #1F3867; 
+    transform: translateY(-2px); 
+}
+        .btn-secondary { 
+    background: #1393BD; 
+    color: white; 
+}
+.btn-secondary:hover { 
+    background: #2FB9CD; 
+}
+        .btn-danger { background: #f56565; color: white; padding: 8px 16px; font-size: 12px; }
+        .btn-edit { 
+    background: #3598A1; 
+    color: white; 
+    padding: 8px 16px; 
+    font-size: 12px; 
+}
+.btn-edit:hover {
+    background: #2FB9CD;
+}
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .summary-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.3s; cursor: pointer; }
+        .summary-card:hover { transform: translateY(-4px); }
+        .summary-card h3 { font-size: 13px; color: #718096; text-transform: uppercase; font-weight: 600; margin-bottom: 10px; }
+        .summary-value { font-size: 36px; font-weight: 700; color: #2d3748; margin-bottom: 8px; }
+        .summary-subtitle { font-size: 13px; color: #718096; }
+        .card-icon { font-size: 24px; margin-bottom: 10px; }
+        .priority-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .priority-panel { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-height: 400px; overflow-y: auto; }
+        .priority-panel h2 { font-size: 18px; color: #2d3748; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; background: white; }
+        .priority-item { padding: 12px; border-left: 4px solid #cbd5e0; background: #f7fafc; margin-bottom: 10px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .priority-item:hover { background: #edf2f7; transform: translateX(4px); }
+        .priority-item.critical { border-left-color: #f56565; }
+        .priority-item.warning { border-left-color: #ed8936; }
+        .priority-item.info { border-left-color: #4299e1; }
+        .item-title { font-weight: 600; color: #2d3748; font-size: 14px; margin-bottom: 4px; }
+        .item-meta { font-size: 12px; color: #718096; display: flex; gap: 15px; flex-wrap: wrap; }
+        .charts-section { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; margin-top: 20px; }
+        .chart-container { position: relative; height: 300px; }
+        .calendar-container { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-nav { display: flex; gap: 10px; }
+        .calendar-grid {display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; width: 100%; table-layout: fixed;}
+        .calendar-day {min-height: 100px; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px; background: white; transition: all 0.3s; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column;}
+        .calendar-day:hover { 
+    border-color: #18518F; 
+    box-shadow: 0 2px 8px rgba(24, 81, 143, 0.2); 
+}
+        .calendar-day.other-month {background: #f7fafc; color: #cbd5e0;}
+        .calendar-day.today { 
+    border-color: #18518F; 
+    background: #E6EEF5; 
+}
+        .day-number { font-weight: 700; font-size: 14px; margin-bottom: 5px; color: #2d3748; }
+        .calendar-task { font-size: 11px; padding: 3px 6px; margin-bottom: 3px; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.2s; background: #edf2f7; color: #2d3748; }
+        .calendar-task:hover { transform: scale(1.05); }
+        .kanban-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
+        .kanban-column { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .kanban-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+        .kanban-title { font-size: 16px; font-weight: 700; color: #2d3748; }
+        .kanban-count { background: #edf2f7; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .kanban-tasks { min-height: 200px; }
+        .kanban-task { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: move; transition: all 0.3s; }
+        .kanban-task:hover { 
+    border-color: #18518F; 
+    box-shadow: 0 4px 12px rgba(24, 81, 143, 0.2); 
+    transform: translateY(-2px); 
+}
+        .kanban-task.dragging { opacity: 0.5; }
+        .kanban-task-title { font-weight: 600; color: #2d3748; margin-bottom: 8px; }
+        .kanban-task-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; color: #718096; }
+        .workload-container { display: flex; flex-direction: column; gap: 15px; }
+        .person-group { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .person-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+        .person-name { font-size: 20px; font-weight: 700; color: #2d3748; }
+        .task-count-badge { 
+    background: #18518F; 
+    color: white; 
+    padding: 6px 14px; 
+    border-radius: 20px; 
+    font-size: 13px; 
+    font-weight: 600; 
+}
+        .bulk-actions-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); display: none; z-index: 1000; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .bulk-actions-bar.active { display: flex; }
+        .bulk-count { font-weight: 700; color: #2d3748; margin-right: 15px; }
+        .task-checkbox { width: 18px; height: 18px; cursor: pointer; margin-right: 10px; }
+
+        /* PROJECT NAVIGATION STYLES */
+        .projects-wrapper { position: relative; }
+        .nav-mode-toggle { display: flex; gap: 5px; background: #f7fafc; padding: 4px; border-radius: 8px; margin-bottom: 20px; width: fit-content; }
+        .nav-mode-btn { padding: 8px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+        .nav-mode-btn.active { 
+    background: white; 
+    color: #18518F; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+        
+        /* STACKED VIEW (Original) */
+        .projects-container { display: flex; flex-direction: column; gap: 20px; }
+        .project-card { background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.3s; }
+        .project-card:hover { transform: translateY(-4px); }
+        .project-card.archived { opacity: 0.6; }
+        .project-header { 
+    padding: 25px 30px; 
+    background: linear-gradient(135deg, #18518F 0%, #1F3867 100%); 
+    color: white; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    cursor: pointer; 
+    user-select: none; 
+}
+        .project-title { display: flex; align-items: center; gap: 15px; flex: 1; }
+        .project-title h2 { font-size: 24px; font-weight: 700; }
+        .owner-badge { 
+            background: #bfdbfe; 
+            color: #1e40af; 
+            padding: 6px 14px; 
+            border-radius: 20px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px;
+            border: 1px solid #93c5fd;
+        }
+        .owner-badge::before { content: "👤"; font-size: 14px; }
+        .project-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .expand-icon { font-size: 20px; transition: transform 0.3s; }
+        .expanded .expand-icon { transform: rotate(180deg); }
+        .project-body { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+        .project-body.expanded { max-height: 10000px; }
+        .project-content { padding: 30px; }
+        
+        /* HYBRID TABS VIEW */
+        .hybrid-tabs-container { display: none; }
+        .hybrid-tabs-container.active { display: block; }
+        .tabs-header-bar { 
+    background: linear-gradient(135deg, #18518F 0%, #1F3867 100%); 
+    color: white; 
+    padding: 20px; 
+    border-radius: 12px 12px 0 0; 
+    margin-bottom: 0; 
+}
+        .tabs-header-title { font-size: 22px; font-weight: 700; margin-bottom: 15px; }
+        .tabs-nav-container { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; }
+        .project-tab { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+        .project-tab:hover { background: rgba(255,255,255,0.3); }
+        .project-tab.active { 
+    background: white; 
+    color: #18518F; 
+}
+        .tab-badge { background: #f56565; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+        .tab-stat { background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .project-tab.active .tab-stat { 
+    background: rgba(24, 81, 143, 0.2); 
+    color: #18518F; 
+}
+        .more-dropdown { background: rgba(255,255,255,0.2); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; position: relative; }
+        .more-dropdown:hover { background: rgba(255,255,255,0.3); }
+        .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); min-width: 200px; z-index: 100; }
+        .dropdown-menu.active { display: block; }
+        .dropdown-item { padding: 12px 16px; color: #2d3748; cursor: pointer; transition: background 0.2s; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-item:first-child { border-radius: 8px 8px 0 0; }
+        .dropdown-item:last-child { border-radius: 0 0 8px 8px; }
+        .dropdown-item:hover { background: #f7fafc; }
+        .tabs-project-content { background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        
+        /* SIDEBAR VIEW */
+        .sidebar-layout { display: none; }
+        .sidebar-layout.active { display: flex; gap: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .projects-sidebar { width: 280px; background: #2d3748; color: white; padding: 20px; min-height: 600px; max-height: 800px; overflow-y: auto; }
+        .sidebar-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; color: #a0aec0; }
+        .sidebar-search { background: rgba(255,255,255,0.1); border: none; padding: 10px 12px; border-radius: 8px; width: 100%; color: white; margin-bottom: 20px; font-size: 14px; }
+        .sidebar-search::placeholder { color: rgba(255,255,255,0.6); }
+        .sidebar-project-list { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-project-item { padding: 12px; border-radius: 8px; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.05); }
+        .sidebar-project-item:hover { background: rgba(255,255,255,0.1); }
+        .sidebar-project-item.active { 
+    background: #18518F; 
+}
+        .sidebar-project-name { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        .sidebar-project-stats { font-size: 11px; color: #cbd5e0; display: flex; gap: 10px; flex-wrap: wrap; }
+        .sidebar-project-item.active .sidebar-project-stats { color: rgba(255,255,255,0.9); }
+        .sidebar-main-content { flex: 1; background: white; padding: 30px; overflow-y: auto; max-height: 800px; }
+        .subcategory { margin-bottom: 25px; border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+        .subcategory-header { padding: 15px 20px; background: #edf2f7; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .subcategory-header h4 { color: #2d3748; font-size: 16px; flex: 1; }
+        .subcategory-body { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+        .subcategory-body.expanded { max-height: 5000px; }
+        .subcategory-content { padding: 20px; }
+        .task-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
+        .task-card { background: white; border: 2px solid #e2e8f0; border-radius: 10px; padding: 15px; transition: all 0.3s; }
+        .task-card:hover { 
+    border-color: #18518F; 
+    box-shadow: 0 4px 12px rgba(24, 81, 143, 0.1); 
+}
+        .task-card.overdue { border-color: #f56565; background: #fff5f5; }
+        .task-card.selected { 
+    border-color: #18518F; 
+    background: #E6EEF5; 
+}
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+        .task-title-section { display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap; }
+        .task-title-section h5 { color: #2d3748; font-size: 16px; font-weight: 600; }
+        .priority-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .priority-high { background: #feb2b2; color: #742a2a; }
+        .priority-medium { background: #fbd38d; color: #7c2d12; }
+        .priority-low { background: #9ae6b4; color: #22543d; }
+        .status-badge { padding: 4px 10px; border-radius: 16px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .status-ongoing { background: #bee3f8; color: #2c5282; }
+        .status-completed { background: #c6f6d5; color: #22543d; }
+        .status-pending { background: #fed7d7; color: #742a2a; }
+        .status-onhold { background: #e2e8f0; color: #4a5568; }
+        .overdue-badge { background: #fed7d7; color: #742a2a; padding: 4px 10px; border-radius: 16px; font-size: 11px; font-weight: 700; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 25px; }
+        .modal-header h2 { color: #2d3748; font-size: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus, 
+.form-group select:focus, 
+.form-group textarea:focus { 
+    outline: none; 
+    border-color: #18518F; 
+}
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px; flex-wrap: wrap; }
+        .empty-state { text-align: center; padding: 40px; color: #718096; background: white; border-radius: 12px; }
+        @media (max-width: 768px) { 
+            .header h1 { font-size: 20px; } 
+            .search-box { width: 100%; } 
+            .summary-grid { grid-template-columns: 1fr; } 
+            .priority-section { grid-template-columns: 1fr; } 
+            .kanban-container { grid-template-columns: 1fr; } 
+            .charts-grid { grid-template-columns: 1fr; } 
+            .calendar-grid { gap: 5px; } 
+            .calendar-day { min-height: 60px; padding: 4px; }
+            .sidebar-layout.active { flex-direction: column; }
+            .projects-sidebar { width: 100%; max-height: 300px; }
+        }
+/* Communications Sub-Nav */
+.sub-nav { display: flex; gap: 8px; background: #edf2f7; padding: 6px; border-radius: 8px; margin-bottom: 20px; width: fit-content; }
+.sub-nav-btn { padding: 8px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+.sub-nav-btn.active { 
+    background: white; 
+    color: #18518F; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+
+/* Calendar Filter Bar */
+.calendar-filter-bar { display: flex; gap: 8px; background: #edf2f7; padding: 6px; border-radius: 8px; margin-bottom: 15px; }
+.calendar-filter-btn { padding: 6px 14px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+.calendar-filter-btn.active { 
+    background: white; 
+    color: #18518F; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+
+/* Communications Table */
+.comms-table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; }
+.comms-table thead { background: #f7fafc; position: sticky; top: 0; z-index: 10; }
+.comms-table th { padding: 12px 15px; text-align: left; font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.comms-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #2d3748; vertical-align: middle; background: white; }
+.comms-table tbody tr:not(.details-row) { cursor: pointer; transition: background 0.2s; background: white; }
+.comms-table tbody tr:not(.details-row):hover { background: #f7fafc; }
+.comms-table tbody tr.expanded { background: #eef2ff !important; }
+.details-row { background: white !important; cursor: default; }
+.details-row:hover { background: white !important; }
+.details-row td { padding: 0; border-bottom: 2px solid #e2e8f0; }
+.details-row.show { display: table-row; }
+.details-row:not(.show) { display: none; }
+
+/* Workflow Status Column */
+.workflow-status { display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
+.workflow-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 8px; background: #f9fafb; border-radius: 6px; }
+.workflow-icon { font-size: 16px; width: 20px; text-align: center; }
+.workflow-label { font-weight: 600; color: #4a5568; min-width: 55px; }
+.workflow-value { color: #2d3748; font-weight: 500; }
+.workflow-value.waiting { color: #ea580c; font-weight: 600; }
+.workflow-value.received { color: #0891b2; font-weight: 600; }
+.workflow-value.approved { color: #16a34a; font-weight: 600; }
+.workflow-owner { color: #64748b; font-size: 12px; font-style: italic; margin-left: 4px; }
+
+/* Communication Badges */
+.badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+.badge-email { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.badge-purespace { background: #e9d5ff; color: #6b21a8; border: 1px solid #c084fc; }
+.badge-other { background: #fed7aa; color: #9a3412; border: 1px solid #fb923c; }
+
+.main-status-badge { display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.main-status-idea { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+.main-status-content_requested { background: #fed7aa; color: #9a3412; border: 1px solid #fb923c; }
+.main-status-in_review { background: #fef08a; color: #713f12; border: 1px solid #facc15; }
+.main-status-approved { background: #bfdbfe; color: #1e40af; border: 1px solid #60a5fa; }
+.main-status-scheduled { background: #c7d2fe; color: #3730a3; border: 1px solid #818cf8; }
+.main-status-sent { background: #bbf7d0; color: #166534; border: 1px solid #4ade80; }
+.main-status-on_hold { background: #fecaca; color: #991b1b; border: 1px solid #f87171; }
+
+/* Tooltip */
+.tooltip-trigger { position: relative; cursor: help; }
+.tooltip-trigger:hover .tooltip-content { display: block; }
+.tooltip-content { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; font-size: 12px; width: 280px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.tooltip-content::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #1e293b; }
+.tooltip-section { margin-bottom: 8px; }
+.tooltip-section:last-child { margin-bottom: 0; }
+.tooltip-label { font-weight: 700; color: #94a3b8; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
+.tooltip-text { color: white; line-height: 1.4; }
+
+/* Calendar item types â€“ unified sizing and shape */
+.calendar-item.project-item,
+.calendar-item.comm-item { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 4px; font-size: 0.85rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.calendar-item.project-item {background: #e2e8f0; color: #2d3748; border-left: 3px solid #4a5568;}
+.calendar-item.comm-item { 
+    background: #D0DFE9; 
+    color: #1F3867; 
+    border-left: 3px solid #1393BD; 
+}
+
+.btn-cancel { background: #cbd5e0; color: #2d3748; }
+
+/* Communications View Container Fix */
+#communicationsView {padding: 0; background: transparent;}
+
+#communicationsView .content-section {background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;}
+
+#communicationsView .section-header {display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;}
+
+#communicationsView .section-header h2 {color: #2d3748; font-size: 20px; font-weight: 700; margin: 0;}
+
+/* Dashboard and All Communications specific */
+#commsDashboard, #commsAll {display: flex; flex-direction: column; gap: 20px;}
+
+.table-container {background: white; border-radius: 12px; overflow: hidden;}
+
+/* --- MOBILE RESPONSIVE FIXES --- */
+@media (max-width: 768px) {/* Container padding */ .calendar-container, .dashboard-container, .summary-card, .content-container {padding: 15px !important; box-sizing: border-box;}
+
+  /* Top navigation bar fixes */
+  .calendar-header,
+  .dashboard-header,
+  .page-header,
+  .nav-bar,
+  .calendar-nav {flex-wrap: wrap; justify-content: center; text-align: center;}
+
+  /* Buttons and filters (stack vertically) */
+  .calendar-nav button,
+  .filters button,
+  .dashboard-filters button {flex: 1 1 45%; margin: 5px; font-size: 14px;}
+
+  /* Search bar shrink and center */
+  input[type="search"],
+  .search-bar {width: 100% !important; margin-top: 10px; font-size: 14px;}
+
+  /* Dashboard summary cards â€“ make them stack nicely */
+  .summary-grid {display: flex; flex-direction: column; gap: 10px;}
+  .summary-card {width: 100%; margin: 0 auto;}
+
+  /* Table responsiveness for "Recent Communications" */
+  table {width: 100%; display: block; overflow-x: auto; white-space: nowrap;}
+
+  /* Fix any element going off-screen */
+  body,
+  html {overflow-x: hidden;}
+
+  /* Calendar responsiveness */
+  .calendar-grid {grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */ gap: 8px;}
+  .calendar-day {min-height: 120px;font-size: 12px;}
+  .calendar-day .day-number {font-size: 13px;}
+}
+/* --- MOBILE HEADER + NAV FIX --- */
+@media (max-width: 768px) {
+  /* Make header content stack vertically */
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Shrink and center the title */
+  .header h1 {
+    font-size: 18px;
+    text-align: center;
+    width: 100%;
+  }
+
+  /* Adjust search box and edit button alignment */
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  /* Fix nav bar wrap so it stays readable */
+  .view-toggle {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .view-btn {
+    flex: 1 1 40%;
+    font-size: 13px;
+    margin: 4px 2px;
+  }
+
+  /* Quick filters also wrap nicely */
+  .quick-filters {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .quick-filter,
+  .archive-toggle,
+  #addProjectBtn {
+    flex: 1 1 45%;
+    font-size: 13px;
+    margin: 4px 2px;
+  }
+
+  /* Ensure no horizontal overflow anywhere */
+  body, html {
+    overflow-x: hidden !important;
+  }
+}
+/* --- FIX: Mobile View Toggles (All Tasks, Overdue, etc.) --- */
+@media (max-width: 768px) {
+  /* Make the filter bar wrap and align evenly */
+  .view-toggle,
+  .quick-filters,
+  .dashboard-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* Style each filter button consistently */
+  .view-toggle button,
+  .quick-filters button,
+  .dashboard-filters button {
+    flex: 1 1 45%;
+    max-width: 45%;
+    text-align: center;
+    font-size: 14px;
+    padding: 10px 0;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+}
+
+/* Campaign Cards */
+.campaigns-grid { display: grid; gap: 20px; }
+.campaign-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; transition: all 0.3s; }
+.campaign-card:hover { border-color: #667eea; box-shadow: 0 4px 12px rgba(102,126,234,0.2); }
+.campaign-card.expanded { border-color: #667eea; background: #f8fafc; }
+.campaign-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+.campaign-title-section { flex: 1; }
+.campaign-title { font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 5px; }
+.campaign-dates { font-size: 13px; color: #64748b; margin-bottom: 10px; }
+.campaign-status-badge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.campaign-status-active { background: #d1fae5; color: #065f46; }
+.campaign-status-completed { background: #e0e7ff; color: #3730a3; }
+.campaign-status-on_hold { background: #fef3c7; color: #92400e; }
+.campaign-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.campaign-progress { margin-bottom: 15px; }
+.progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.progress-fill { 
+    height: 100%; 
+    background: linear-gradient(90deg, #3598A1, #1393BD); 
+    transition: width 0.3s; 
+}
+.progress-text { font-size: 13px; color: #64748b; font-weight: 600; }
+
+.campaign-stats { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+.stat-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.stat-icon { font-size: 16px; }
+.stat-value { font-weight: 700; color: #2d3748; }
+
+.campaign-description { font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; }
+
+.expand-toggle { 
+    margin-top: 10px; 
+    padding: 8px 16px; 
+    background: #E6EEF5; 
+    color: #18518F; 
+    border: none; 
+    border-radius: 6px; 
+    font-size: 13px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    width: 100%; 
+    transition: all 0.3s; 
+}
+.expand-toggle:hover { 
+    background: #D0DFE9; 
+}
+
+.campaign-comms { display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0; animation: fadeIn 0.3s ease-in; }
+.campaign-comms.show { display: block; }
+.campaign-comms h4 { color: #2d3748; font-size: 16px; margin-bottom: 15px; }
+
+.sequence-badge { 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    min-width: 24px; 
+    height: 24px; 
+    padding: 0 6px; 
+    background: #18518F; 
+    color: white; 
+    border-radius: 12px; 
+    font-size: 11px; 
+    font-weight: 700; 
+    margin-right: 8px; 
+}
+
+.campaign-badge { 
+    padding: 4px 10px; 
+    border-radius: 12px; 
+    font-size: 11px; 
+    font-weight: 600; 
+    background: #E6EEF5; 
+    color: #18518F; 
+    white-space: nowrap; 
+    cursor: pointer; 
+    transition: all 0.2s; 
+}
+.campaign-badge:hover { 
+    background: #D0DFE9; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap" rel="stylesheet">
+
+    </style>
+</head>
+<body>
+    <!-- Authentication Container -->
+    <div class="auth-container active" id="authContainer">
+        <div class="auth-box">
+            <h1>📊 Project Tracker</h1>
+            <p>Sign in to access your projects and track changes</p>
+            <button class="google-signin-btn" id="googleSignInBtn">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="loading" id="loading">Loading your dashboard...</div>
+        <div class="header" style="display: none;" id="header">
+            <div class="header-top">
+                <h1 id="dashboardTitle">📊 Project Tracker Dashboard</h1>
+                <div class="header-actions">
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <img class="user-avatar" id="userAvatar" src="" alt="User">
+                        <span class="user-name" id="userName"></span>
+                        <button class="signout-btn" id="signOutBtn">Sign Out</button>
+                    </div>
+                    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search projects, tasks, people...">
+                    <button class="btn btn-edit" id="editTitleBtn">Edit Title</button>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="dashboard">Dashboard</button>
+                    <button class="view-btn" data-view="analytics">Analytics</button>
+                    <button class="view-btn" data-view="calendar">Calendar</button>
+                    <button class="view-btn" data-view="kanban">Kanban</button>
+                    <button class="view-btn" data-view="projects">Projects</button>
+                    <button class="view-btn" data-view="workload">Workload</button>
+<button class="view-btn" data-view="communications">📢 Communications</button>
+</div>
+                <div class="quick-filters">
+                    <button class="quick-filter active" data-filter="all">All Tasks</button>
+                    <button class="quick-filter" data-filter="overdue">Overdue</button>
+                    <button class="quick-filter" data-filter="week">Due This Week</button>
+                    <button class="quick-filter" data-filter="owner" id="ownerFilterBtn" style="display: none;">By Owner: <span id="ownerFilterText"></span></button>
+                    <button class="archive-toggle" id="archiveToggle">📦Show Archived</button>
+                </div>
+                <button class="btn btn-primary" id="addProjectBtn">➕ Add Project</button>
+            </div>
+        </div>
+        
+        <div class="summary-grid" id="summaryGrid" style="display: none;"></div>
+        <div class="priority-section" id="prioritySection" style="display: none;"></div>
+        
+        <div class="charts-section" id="chartsSection" style="display: none;">
+            <h2 style="color: #2d3748; margin-bottom: 20px;">📊 Analytics & Insights</h2>
+            <div class="charts-grid">
+                <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                <div class="chart-container"><canvas id="priorityChart"></canvas></div>
+                <div class="chart-container"><canvas id="workloadChart"></canvas></div>
+                <div class="chart-container"><canvas id="completionChart"></canvas></div>
+            </div>
+        </div>
+        
+        <div class="calendar-container" id="calendarContainer" style="display: none;">
+            <div class="calendar-header">
+    <h2 id="calendarMonth" style="color: #2d3748;"></h2>
+    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <div class="calendar-filter-bar">
+            <button class="calendar-filter-btn active" data-cal-filter="all">All Items</button>
+            <button class="calendar-filter-btn" data-cal-filter="projects">Projects Only</button>
+            <button class="calendar-filter-btn" data-cal-filter="comms">Comms Only</button>
+        </div>
+        <div class="calendar-nav">
+            <button class="btn btn-primary btn-sm" id="prevMonth">← Prev</button>
+            <button class="btn btn-primary btn-sm" id="todayBtn">Today</button>
+            <button class="btn btn-primary btn-sm" id="nextMonth">Next â†’</button>
+        </div>
+    </div>
+</div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+<div style="margin-top: 20px; padding: 15px; background: #f7fafc; border-radius: 8px; display: flex; gap: 20px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 20px; height: 20px; background: #e2e8f0; border-radius: 4px; border-left: 3px solid #4a5568;"></div>
+        <span style="font-size: 13px; color: #4a5568; font-weight: 600;">Project Items</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 20px; height: 20px; background: #d6bcfa; border-radius: 4px; border-left: 3px solid #764ba2;"></div>
+        <span style="font-size: 13px; color: #4a5568; font-weight: 600;">Communication Items</span>
+    </div>
+</div>      
+        </div>
+  
+        <div class="kanban-container" id="kanbanContainer" style="display: none;"></div>
+        
+        <!-- NEW: Projects Wrapper with 3 Navigation Modes -->
+        <div class="projects-wrapper" id="projectsWrapper" style="display: none;">
+            <div class="nav-mode-toggle">
+                <button class="nav-mode-btn active" data-mode="stacked">📊 Stacked</button>
+                <button class="nav-mode-btn" data-mode="tabs">🗂️ Hybrid Tabs</button>
+                <button class="nav-mode-btn" data-mode="sidebar">📂 Sidebar</button>
+            </div>
+            
+            <!-- Stacked View -->
+            <div class="projects-container" id="projectsContainer"></div>
+            
+            <!-- Hybrid Tabs View -->
+            <div class="hybrid-tabs-container" id="hybridTabsContainer">
+                <div class="tabs-header-bar">
+                    <div class="tabs-header-title">📊 Project Navigation</div>
+                    <div class="tabs-nav-container" id="tabsNavContainer"></div>
+                </div>
+                <div class="tabs-project-content" id="tabsProjectContent"></div>
+            </div>
+            
+            <!-- Sidebar View -->
+            <div class="sidebar-layout" id="sidebarLayout">
+                <div class="projects-sidebar">
+                    <div class="sidebar-title">Projects</div>
+                    <input type="text" class="sidebar-search" id="sidebarSearch" placeholder="🔍 Search projects...">
+                    <div class="sidebar-project-list" id="sidebarProjectList"></div>
+                </div>
+                <div class="sidebar-main-content" id="sidebarMainContent"></div>
+            </div>
+        </div>
+        
+        <div class="workload-container" id="workloadContainer" style="display: none;"></div>
+        
+        <div class="bulk-actions-bar" id="bulkActionsBar">
+            <span class="bulk-count"><span id="selectedCount">0</span> selected</span>
+            <button class="btn btn-sm btn-secondary" id="bulkStatusBtn">Change Status</button>
+            <button class="btn btn-sm btn-primary" id="bulkPriorityBtn">Change Priority</button>
+            <button class="btn btn-sm btn-edit" id="bulkOwnerBtn">Reassign Owner</button>
+            <button class="btn btn-sm btn-danger" id="bulkDeleteBtn">Delete Selected</button>
+            <button class="btn btn-sm" id="clearSelectionBtn" style="background: #cbd5e0;">Clear Selection</button>
+        </div>
+    </div>
+    <!-- COMMUNICATIONS VIEW -->
+<div id="communicationsView" style="display: none;">
+    <div class="sub-nav">
+        <button class="sub-nav-btn active" data-comm-view="dashboard">Dashboard</button>
+        <button class="sub-nav-btn" data-comm-view="all">All Communications</button>
+        <button class="sub-nav-btn" data-comm-view="campaigns">Campaigns</button>
+    </div>
+    
+    <!-- Communications Dashboard -->
+    <div id="commsDashboard">
+        <div class="summary-grid" id="commsSummaryGrid"></div>
+        <div class="content-section">
+            <div class="section-header">
+                <h2>Recent Communications</h2>
+                <button class="btn btn-primary" id="addCommBtn">➕ New Communication</button>
+            </div>
+            <div class="table-container" id="commsRecentTable"></div>
+        </div>
+    </div>
+    
+    <!-- All Communications -->
+    <div id="commsAll" style="display: none;">
+        <div class="content-section">
+            <div class="section-header">
+                <h2>All Communications</h2>
+                <button class="btn btn-primary" id="addCommBtn2">➕ New Communication</button>
+            </div>
+            <div class="table-container" id="commsAllTable"></div>
+        </div>
+    </div>
+    
+    <!-- Campaigns View -->
+    <div id="commsCampaigns" style="display: none;">
+        <div class="content-section">
+            <div class="section-header">
+                <h2>🎯 Campaigns</h2>
+                <button class="btn btn-primary" id="addCampaignBtn">➕ New Campaign</button>
+            </div>
+            <div class="campaigns-grid" id="campaignsGrid"></div>
+        </div>
+    </div>
+</div>
+    <!-- Modals -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header"><h2 id="projectModalTitle">Add New Project</h2></div>
+            <div>
+                <div class="form-group">
+                    <label>Project Name *</label>
+                    <input type="text" id="projectName">
+                </div>
+                <div class="form-group">
+                    <label>Priority *</label>
+                    <select id="projectPriority">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Project Owner (Optional)</label>
+                    <input type="text" id="projectOwner" list="projectOwnersList" placeholder="Enter or select owner name">
+                    <datalist id="projectOwnersList"></datalist>
+                    <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">Type a new name or select from existing owners</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelProjectBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveProjectBtn">Save Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="subcategoryModal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Add New Subcategory</h2></div>
+            <div>
+                <div class="form-group">
+                    <label>Subcategory Name *</label>
+                    <input type="text" id="subcategoryName">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelSubcategoryBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveSubcategoryBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header"><h2 id="taskModalTitle">Add New Task</h2></div>
+            <div>
+                <div class="form-group">
+                    <label>Task Name *</label>
+                    <input type="text" id="taskName">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="taskDescription">
+                </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select id="taskStatus">
+                        <option value="pending">Pending</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="completed">Completed</option>
+                        <option value="onhold">On Hold</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority *</label>
+                    <select id="taskPriority">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Owner</label>
+                    <input type="text" id="taskOwner">
+                </div>
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="date" id="taskDeadline">
+                </div>
+                <div class="form-group">
+                    <label>Next Steps</label>
+                    <textarea id="taskNextSteps"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="taskNotes"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelTaskBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="saveTaskBtn">Save Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="titleModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header"><h2>Edit Dashboard Title</h2></div>
+            <div>
+                <div class="form-group">
+                    <label>New Title</label>
+                    <input type="text" id="newTitleInput">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelTitleBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveTitleBtn">Save Title</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="bulkModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header"><h2 id="bulkModalTitle">Bulk Update</h2></div>
+            <div>
+                <div class="form-group" id="bulkFormGroup"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelBulkBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveBulkBtn">Update Tasks</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header"><h2>Confirm Action</h2></div>
+            <div>
+                <p id="confirmMessage" style="margin-bottom: 25px; color: #4a5568; font-size: 16px;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancelConfirmBtn" style="background: #cbd5e0;">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Add this COMMUNICATION MODAL right before </body> tag, after your other modals -->
+
+<div class="modal" id="commModal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 id="commModalTitle">New Communication</h2>
+        </div>
+        <form id="commForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <!-- Left Column -->
+                <div>
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="commDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <select id="commType" required>
+                            <option value="announcement">Announcement</option>
+                            <option value="newsletter">Newsletter</option>
+                            <option value="event">Event</option>
+                            <option value="campaign">Campaign</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Subject *</label>
+                        <input type="text" id="commSubject" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Audience *</label>
+                        <input type="text" id="commAudience" placeholder="e.g., All Staff, Leadership, New Hires" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Channels *</label>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <label><input type="checkbox" id="ch_email" class="channel-checkbox"> Email</label>
+                            <label><input type="checkbox" id="ch_purespace" class="channel-checkbox"> PureSpace</label>
+                            <label><input type="checkbox" id="ch_other" class="channel-checkbox"> Other</label>
+                        </div>
+                        <input type="text" id="customChannel" placeholder="Specify other channel" style="margin-top: 10px; display: none;">
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div>
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select id="commStatus" required>
+                            <option value="idea">Idea</option>
+                            <option value="content_requested">Content Requested</option>
+                            <option value="in_review">In Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="sent">Sent</option>
+                            <option value="on_hold">On Hold</option>
+                        </select>
+                    </div>
+                    
+<div class="form-group">
+    <label>Campaign (Optional)</label>
+    <select id="commCampaign">
+        <option value="">-- No Campaign --</option>
+    </select>
+    <div style="font-size: 12px; color: #718096; margin-top: 4px;">Link this communication to an existing campaign</div>
+</div>
+
+                    <div class="form-group">
+                        <label>Content Owner</label>
+                        <input type="text" id="commContentOwner" placeholder="Person responsible for content">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Design Requirements</label>
+                        <textarea id="commDesigns" rows="2" placeholder="What designs are needed?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Workflow Status</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <label><input type="checkbox" id="contentReceived"> Content Received</label>
+                            <label><input type="checkbox" id="contentApproved"> Content Approved</label>
+                            <label><input type="checkbox" id="designsReceived"> Designs Received</label>
+                            <label><input type="checkbox" id="designsApproved"> Designs Approved</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Full Width Fields -->
+            <div class="form-group">
+                <label>Campaign (Optional)</label>
+                <select id="commCampaign">
+                    <option value="">None - Standalone</option>
+                    <option value="__create_new__">+ Create New Campaign...</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="commSequenceGroup" style="display: none;">
+                <label>Sequence Number (Optional)</label>
+                <input type="number" id="commSequence" min="1" placeholder="e.g., 1, 2, 3...">
+                <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">Order of this communication within the campaign</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Approval Notes</label>
+                <textarea id="commApprovalNotes" rows="2" placeholder="Any approval notes or feedback"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>General Notes</label>
+                <textarea id="commNotes" rows="3" placeholder="Additional notes about this communication"></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeCommModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Communication</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- CAMPAIGN MODAL -->
+<div class="modal" id="campaignModal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 id="campaignModalTitle">New Campaign</h2>
+        </div>
+        <form id="campaignForm">
+            <div class="form-group">
+                <label>Campaign Name *</label>
+                <input type="text" id="campaignName" required placeholder="e.g., Annual Benefits 2025">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="campaignStartDate">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="campaignEndDate">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Status *</label>
+                <select id="campaignStatus" required>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="on_hold">On Hold</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="campaignDescription" rows="3" placeholder="Brief description of this campaign"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="campaignNotes" rows="3" placeholder="Additional notes, key contacts, requirements, etc."></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeCampaignModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Campaign</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+        // ============================================
+        // FIREBASE CONFIGURATION
+        // ============================================
+        
+        // IMPORTANT: Replace these with your own Firebase config
+        // Get this from Firebase Console > Project Settings > Your apps > Firebase SDK snippet
+        const firebaseConfig = {
+  apiKey: "AIzaSyBR1EsGgQbmp4zQGzviS-aLaHWIvvNVq7g",
+  authDomain: "csr-tracker-b39a2.firebaseapp.com",
+  projectId: "csr-tracker-b39a2",
+  storageBucket: "csr-tracker-b39a2.firebasestorage.app",
+  messagingSenderId: "901354367326",
+  appId: "1:901354367326:web:8843cdbee19328356407cf",
+  measurementId: "G-WX8SPCW3KT"
+};
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Google Auth Provider
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        
+        // Current user state
+        let currentUser = null;
+        
+        // ============================================
+        // AUTHENTICATION FUNCTIONS
+        // ============================================
+        
+        function showAuthContainer() {
+            document.getElementById('authContainer').classList.add('active');
+            document.getElementById('header').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function hideAuthContainer() {
+            document.getElementById('authContainer').classList.remove('active');
+        }
+        
+        async function signInWithGoogle() {
+            try {
+                const result = await auth.signInWithPopup(googleProvider);
+                currentUser = result.user;
+                console.log('Signed in:', currentUser.displayName);
+            } catch (error) {
+                console.error('Sign-in error:', error);
+                alert('Sign-in failed: ' + error.message);
+            }
+        }
+        
+        async function signOut() {
+            try {
+                await auth.signOut();
+                currentUser = null;
+                showAuthContainer();
+            } catch (error) {
+                console.error('Sign-out error:', error);
+                alert('Sign-out failed: ' + error.message);
+            }
+        }
+        
+        function updateUserUI() {
+            if (currentUser) {
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('userName').textContent = currentUser.displayName;
+                document.getElementById('userAvatar').src = currentUser.photoURL;
+                hideAuthContainer();
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                showAuthContainer();
+            }
+        }
+        
+        // Auth state observer
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            updateUserUI();
+            if (user) {
+                init();
+            }
+        });
+        
+        // ============================================
+        // FIREBASE HELPER FUNCTIONS
+        // ============================================
+        
+        function collection(db, collectionName) {
+            return db.collection(collectionName);
+        }
+        
+        async function addDoc(collectionRef, data) {
+            const newData = {
+                ...data,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdBy: currentUser ? {
+                    uid: currentUser.uid,
+                    name: currentUser.displayName,
+                    email: currentUser.email,
+                    photoURL: currentUser.photoURL
+                } : null,
+                modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                modifiedBy: currentUser ? {
+                    uid: currentUser.uid,
+                    name: currentUser.displayName,
+                    email: currentUser.email
+                } : null
+            };
+            
+            const docRef = await collectionRef.add(newData);
+            return { id: docRef.id };
+        }
+        
+        async function updateDoc(docRef, data) {
+            const updateData = {
+                ...data,
+                modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                modifiedBy: currentUser ? {
+                    uid: currentUser.uid,
+                    name: currentUser.displayName,
+                    email: currentUser.email
+                } : null
+            };
+            
+            await docRef.update(updateData);
+        }
+        
+        async function deleteDoc(docRef) {
+            await docRef.delete();
+        }
+        
+        function doc(db, collectionName, docId) {
+            return db.collection(collectionName).doc(docId);
+        }
+        
+        async function getDocs(collectionRef) {
+            const snapshot = await collectionRef.get();
+            return {
+                docs: snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    data: () => doc.data()
+                })),
+                forEach: function(callback) {
+                    this.docs.forEach(callback);
+                }
+            };
+        }
+        
+        function onSnapshot(collectionRef, callback) {
+            return collectionRef.onSnapshot(snapshot => {
+                callback({
+                    docs: snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        data: () => doc.data()
+                    })),
+                    forEach: function(fn) {
+                        this.docs.forEach(fn);
+                    }
+                });
+            });
+        }
+        
+        function query(collectionRef, ...constraints) {
+            return collectionRef;
+        }
+        
+        function orderBy(field, direction) {
+            return { field, direction };
+        }
+        
+        function serverTimestamp() {
+            return firebase.firestore.FieldValue.serverTimestamp();
+        }
+        
+        // Variables - Added projectNavMode, activeTabProjectId, dropdownOpen
+        let projects=[],allTasks=[],dashboardTitle='📊 Project Tracker Dashboard',currentProjectId=null,currentSubcategoryId=null,currentTaskId=null,editMode=false,confirmCallback=null,expandedProjects=new Set(),expandedSubcategories=new Set(),currentView='dashboard',currentFilter='all',searchQuery='',showArchived=false,selectedTasks=new Set(),currentCalendarDate=new Date(),charts={},projectNavMode='stacked',activeTabProjectId=null,dropdownOpen=false,filterOwner=null;
+
+        async function init(){
+            try{
+                await loadAllData();
+                document.getElementById('loading').style.display='none';
+                document.getElementById('header').style.display='block';
+                renderCurrentView();
+                setupEventListeners();
+                setupRealtimeListeners();
+                setupCommEventListeners();
+                setupCampaignEventListeners();
+                setupCampaignFirebaseListener();
+            }catch(e){
+                console.error('Error:',e);
+                document.getElementById('loading').innerHTML=`<div style="color: white;"><h2>âš ï¸ Error</h2><p>${e.message}</p></div>`;
+            }
+        }
+        
+        function setupRealtimeListeners(){
+    onSnapshot(query(collection(db,'projects'),orderBy('createdAt','asc')),()=>loadAllData());
+    onSnapshot(query(collection(db,'subcategories'),orderBy('createdAt','asc')),()=>loadAllData());
+    onSnapshot(query(collection(db,'tasks'),orderBy('createdAt','asc')),()=>loadAllData());
+    onSnapshot(query(collection(db,'settings')),()=>loadTitle());
+    
+    // ADD THESE LINES:
+    onSnapshot(query(collection(db,'communications'),orderBy('createdAt','desc')),(snapshot)=>{
+        communications=[];
+        snapshot.forEach(d=>communications.push({id:d.id,...d.data()}));
+        if(currentView==='communications')renderCommunications();
+        if(currentView==='calendar')renderCalendar();
+    });
+    
+    onSnapshot(query(collection(db,'campaigns'),orderBy('createdAt','desc')),(snapshot)=>{
+        campaigns=[];
+        snapshot.forEach(d=>campaigns.push({id:d.id,...d.data()}));
+        updateCampaignDropdown();
+    });
+}
+        
+        async function loadTitle(){
+            try{
+                const s=await getDocs(collection(db,'settings'));
+                s.forEach(d=>{
+                    if(d.data().key==='dashboard_title'){
+                        dashboardTitle=d.data().value;
+                        document.getElementById('dashboardTitle').textContent=dashboardTitle;
+                    }
+                });
+            }catch(e){
+                console.error('Error:',e);
+            }
+        }
+        
+        async function loadAllData(){
+            try{
+                const[p,s,t]=await Promise.all([
+                    getDocs(collection(db,'projects')),
+                    getDocs(collection(db,'subcategories')),
+                    getDocs(collection(db,'tasks'))
+                ]);
+                
+                allTasks=[];
+                t.forEach(d=>allTasks.push({id:d.id,...d.data()}));
+                
+                const subs=[];
+                s.forEach(d=>subs.push({id:d.id,...d.data()}));
+                
+                projects=[];
+                p.forEach(d=>{
+                    const pd={id:d.id,...d.data()};
+                    pd.tasks=allTasks.filter(t=>t.projectId===pd.id&&!t.subcategoryId);
+                    pd.subcategories=subs.filter(s=>s.projectId===pd.id).map(sub=>({
+                        ...sub,
+                        tasks:allTasks.filter(t=>t.subcategoryId===sub.id)
+                    }));
+                    projects.push(pd);
+                });
+                
+                await loadTitle();
+                renderCurrentView();
+            }catch(e){
+                console.error('Error:',e);
+            }
+        }
+        
+        // NEW: Handler functions for tabs and sidebar
+        function handleTabClick(e){
+            const tab=e.target.closest('.project-tab');
+            if(tab&&tab.dataset.projectId){
+                e.stopPropagation();
+                activeTabProjectId=tab.dataset.projectId;
+                renderTabsView();
+                return;
+            }
+            const dropdownItem=e.target.closest('.dropdown-item');
+            if(dropdownItem&&dropdownItem.dataset.projectId){
+                e.stopPropagation();
+                activeTabProjectId=dropdownItem.dataset.projectId;
+                dropdownOpen=false;
+                renderTabsView();
+                return;
+            }
+            if(e.target.closest('.more-dropdown')){
+                e.stopPropagation();
+                dropdownOpen=!dropdownOpen;
+                const dd=document.querySelector('.dropdown-menu');
+                if(dd)dd.classList.toggle('active');
+            }
+        }
+        
+        function handleSidebarClick(e){
+            const item=e.target.closest('.sidebar-project-item');
+            if(item&&item.dataset.projectId){
+                e.stopPropagation();
+                activeTabProjectId=item.dataset.projectId;
+                renderSidebarView();
+            }
+        }
+        
+        function handleProjectClick(e){
+            const t=e.target;
+            
+            if(t.classList.contains('task-checkbox')){
+                const tid=t.dataset.taskId;
+                t.checked?selectedTasks.add(tid):selectedTasks.delete(tid);
+                updateBulkActionsBar();
+                renderCurrentView();
+                return;
+            }
+            
+            if(t.closest('.project-header')&&!t.closest('button')&&projectNavMode==='stacked'){
+                const c=t.closest('.project-card');
+                if(c)toggleProject(c.dataset.projectId);
+                return;
+            }
+            
+            if(t.closest('.subcategory-header')&&!t.closest('button')){
+                const h=t.closest('.subcategory-header');
+                if(h)toggleSubcategory(h.dataset.subcategoryId);
+                return;
+            }
+            
+            if(t.classList.contains('edit-project-btn')){e.stopPropagation();editProject(t.dataset.projectId)}
+            if(t.classList.contains('delete-project-btn')){e.stopPropagation();deleteProject(t.dataset.projectId)}
+            if(t.classList.contains('archive-project-btn')){e.stopPropagation();archiveProject(t.dataset.projectId)}
+            if(t.classList.contains('add-subcategory-btn')){e.stopPropagation();openSubcategoryModal(t.dataset.projectId)}
+            if(t.classList.contains('delete-subcategory-btn')){e.stopPropagation();deleteSubcategory(t.dataset.subcategoryId)}
+            if(t.classList.contains('add-task-btn')){e.stopPropagation();openTaskModal(t.dataset.projectId,t.dataset.subcategoryId||null)}
+            if(t.classList.contains('edit-task-btn')){e.stopPropagation();editTask(t.dataset.projectId,t.dataset.subcategoryId||null,t.dataset.taskId)}
+            if(t.classList.contains('delete-task-btn')){e.stopPropagation();deleteTask(t.dataset.taskId)}
+        }
+function setupEventListeners(){
+            // Auth buttons
+            document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
+            document.getElementById('signOutBtn').addEventListener('click', signOut);
+            
+            document.getElementById('addProjectBtn').addEventListener('click',()=>openProjectModal());
+            document.getElementById('editTitleBtn').addEventListener('click',openTitleModal);
+            document.getElementById('searchBox').addEventListener('input',e=>{searchQuery=e.target.value.toLowerCase();renderCurrentView()});
+            document.getElementById('archiveToggle').addEventListener('click',toggleArchiveView);
+            
+            document.querySelectorAll('.view-btn').forEach(b=>b.addEventListener('click',e=>{
+                document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentView=e.target.dataset.view;
+                renderCurrentView();
+            }));
+            
+            document.querySelectorAll('.quick-filter').forEach(b=>b.addEventListener('click',e=>{
+                const filterType = e.target.dataset.filter;
+                
+                // If clicking owner filter button, clear it
+                if(filterType === 'owner'){
+                    filterOwner = null;
+                    document.getElementById('ownerFilterBtn').style.display = 'none';
+                    document.querySelector('[data-filter="all"]').classList.add('active');
+                    e.target.classList.remove('active');
+                    currentFilter = 'all';
+                    renderCurrentView();
+                    return;
+                }
+                
+                document.querySelectorAll('.quick-filter').forEach(b=>b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter=e.target.dataset.filter;
+                
+                // Don't clear owner filter if it's set unless explicitly changing to 'all'
+                if(currentFilter === 'all'){
+                    filterOwner = null;
+                    document.getElementById('ownerFilterBtn').style.display = 'none';
+                }
+                
+                renderCurrentView();
+            }));
+            
+            document.getElementById('prevMonth')?.addEventListener('click',()=>{currentCalendarDate.setMonth(currentCalendarDate.getMonth()-1);renderCalendar()});
+            document.getElementById('todayBtn')?.addEventListener('click',()=>{currentCalendarDate=new Date();renderCalendar()});
+            document.getElementById('nextMonth')?.addEventListener('click',()=>{currentCalendarDate.setMonth(currentCalendarDate.getMonth()+1);renderCalendar()});
+            
+            document.getElementById('bulkStatusBtn').addEventListener('click',()=>openBulkModal('status'));
+            document.getElementById('bulkPriorityBtn').addEventListener('click',()=>openBulkModal('priority'));
+            document.getElementById('bulkOwnerBtn').addEventListener('click',()=>openBulkModal('owner'));
+            document.getElementById('bulkDeleteBtn').addEventListener('click',bulkDelete);
+            document.getElementById('clearSelectionBtn').addEventListener('click',clearSelection);
+            
+            document.getElementById('cancelProjectBtn').addEventListener('click',closeProjectModal);
+            document.getElementById('saveProjectBtn').addEventListener('click',handleProjectSubmit);
+            document.getElementById('cancelSubcategoryBtn').addEventListener('click',closeSubcategoryModal);
+            document.getElementById('saveSubcategoryBtn').addEventListener('click',handleSubcategorySubmit);
+            document.getElementById('cancelTaskBtn').addEventListener('click',closeTaskModal);
+            document.getElementById('saveTaskBtn').addEventListener('click',handleTaskSubmit);
+            document.getElementById('cancelConfirmBtn').addEventListener('click',closeConfirmModal);
+            document.getElementById('confirmDeleteBtn').addEventListener('click',handleConfirmDelete);
+            document.getElementById('cancelTitleBtn').addEventListener('click',closeTitleModal);
+            document.getElementById('saveTitleBtn').addEventListener('click',handleTitleSubmit);
+            document.getElementById('cancelBulkBtn').addEventListener('click',closeBulkModal);
+            document.getElementById('saveBulkBtn').addEventListener('click',handleBulkUpdate);
+            
+            ['projectModal','subcategoryModal','taskModal','confirmModal','titleModal','bulkModal'].forEach(id=>
+                document.getElementById(id).addEventListener('click',e=>{
+                    if(e.target.id===id){
+                        const f={
+                            projectModal:closeProjectModal,
+                            subcategoryModal:closeSubcategoryModal,
+                            taskModal:closeTaskModal,
+                            confirmModal:closeConfirmModal,
+                            titleModal:closeTitleModal,
+                            bulkModal:closeBulkModal
+                        }[id];
+                        f();
+                    }
+                })
+            );
+            
+            document.getElementById('projectsContainer').addEventListener('click',handleProjectClick);
+            document.getElementById('workloadContainer').addEventListener('click',handleProjectClick);
+            
+            // NEW: Event listeners for tabs and sidebar
+            document.getElementById('tabsProjectContent').addEventListener('click',handleProjectClick);
+            document.getElementById('sidebarMainContent').addEventListener('click',handleProjectClick);
+            document.getElementById('tabsNavContainer').addEventListener('click',handleTabClick);
+            document.getElementById('sidebarProjectList').addEventListener('click',handleSidebarClick);
+            
+            // NEW: Navigation mode toggle buttons
+            document.querySelectorAll('.nav-mode-btn').forEach(b=>b.addEventListener('click',e=>{
+                projectNavMode=e.target.dataset.mode;
+                document.querySelectorAll('.nav-mode-btn').forEach(btn=>btn.classList.remove('active'));
+                e.target.classList.add('active');
+                renderProjects();
+            }));
+            
+            // NEW: Sidebar search
+            document.getElementById('sidebarSearch').addEventListener('input',e=>{
+                const sq=e.target.value.toLowerCase();
+                renderSidebarProjects(sq);
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click',e=>{
+                if(!e.target.closest('.more-dropdown')){
+                    dropdownOpen=false;
+                    const dd=document.querySelector('.dropdown-menu');
+                    if(dd)dd.classList.remove('active');
+                }
+            });
+        }
+        
+        function toggleArchiveView(){
+            showArchived=!showArchived;
+            document.getElementById('archiveToggle').classList.toggle('active');
+            document.getElementById('archiveToggle').textContent=showArchived?'📦Hide Archived':'📦Show Archived';
+            renderCurrentView();
+        }
+        
+        function renderCurrentView(){
+            document.getElementById('summaryGrid').style.display='none';
+            document.getElementById('prioritySection').style.display='none';
+            document.getElementById('chartsSection').style.display='none';
+            document.getElementById('calendarContainer').style.display='none';
+            document.getElementById('kanbanContainer').style.display='none';
+            document.getElementById('projectsWrapper').style.display='none';
+            document.getElementById('workloadContainer').style.display='none';
+            document.getElementById('communicationsView').style.display='none'; 
+            
+            if(currentView==='dashboard'){
+                document.getElementById('summaryGrid').style.display='grid';
+                document.getElementById('prioritySection').style.display='grid';
+                renderSummary();
+                renderPriorityPanels();
+            }else if(currentView==='analytics'){
+                document.getElementById('chartsSection').style.display='block';
+                renderCharts();
+            }else if(currentView==='calendar'){
+                document.getElementById('calendarContainer').style.display='block';
+                renderCalendar();
+            }else if(currentView==='kanban'){
+                document.getElementById('kanbanContainer').style.display='grid';
+                renderKanban();
+            }else if(currentView==='projects'){
+                document.getElementById('projectsWrapper').style.display='block';
+                renderProjects();
+            }else if(currentView==='workload'){
+                document.getElementById('workloadContainer').style.display='flex';
+                renderWorkload();
+            }else if(currentView==='communications'){ 
+
+document.getElementById('communicationsView').style.display='block';
+                renderCommunications();
+            }
+        }
+        
+        function getFilteredProjects(){
+            let filtered = projects.filter(p=>showArchived?p.archived:!p.archived);
+            
+            // Filter by owner if active
+            if(filterOwner){
+                filtered = filtered.filter(p=>p.owner===filterOwner);
+            }
+            
+            return filtered;
+        }
+        
+        function getFilteredTasks(){
+            let f=[...allTasks];
+            const today=new Date();
+            today.setHours(0,0,0,0);
+            
+            if(!showArchived){
+                const activeIds=new Set(projects.filter(p=>!p.archived).map(p=>p.id));
+                f=f.filter(t=>activeIds.has(t.projectId));
+            }
+            
+            if(currentFilter==='overdue'){
+                f=f.filter(task=>{
+                    if(!task.deadline)return false;
+                    const d=new Date(task.deadline);
+                    d.setHours(0,0,0,0);
+                    return d<today&&task.status!=='completed';
+                });
+            }else if(currentFilter==='week'){
+                const week=new Date(today);
+                week.setDate(week.getDate()+7);
+                f=f.filter(task=>{
+                    if(!task.deadline)return false;
+                    const d=new Date(task.deadline);
+                    d.setHours(0,0,0,0);
+                    return d>=today&&d<=week&&task.status!=='completed';
+                });
+            }
+            
+            if(searchQuery){
+                f=f.filter(task=>
+                    task.name.toLowerCase().includes(searchQuery)||
+                    (task.description&&task.description.toLowerCase().includes(searchQuery))||
+                    (task.owner&&task.owner.toLowerCase().includes(searchQuery))
+                );
+            }
+            
+            return f;
+        }
+function renderSummary(){
+            const fps=getFilteredProjects(),fts=getFilteredTasks(),today=new Date();
+            today.setHours(0,0,0,0);
+            
+            const tp=fps.length,tt=fts.length,ct=fts.filter(t=>t.status==='completed').length,cr=tt>0?Math.round((ct/tt)*100):0;
+            
+            const ot=fts.filter(task=>{
+                if(!task.deadline||task.status==='completed')return false;
+                const d=new Date(task.deadline);
+                d.setHours(0,0,0,0);
+                return d<today;
+            });
+            
+            const week=new Date(today);
+            week.setDate(week.getDate()+7);
+            const dw=fts.filter(task=>{
+                if(!task.deadline||task.status==='completed')return false;
+                const d=new Date(task.deadline);
+                d.setHours(0,0,0,0);
+                return d>=today&&d<=week;
+            });
+            
+            const sn=searchQuery?`<div style="color: #667eea; font-size: 12px; margin-top: 5px;">Filtered by: "${searchQuery}"</div>`:'';
+            
+            document.getElementById('summaryGrid').innerHTML=`
+                <div class="summary-card">
+                    <div class="card-icon">📋</div>
+                    <h3>Active Projects</h3>
+                    <div class="summary-value">${tp}</div>
+                    <div class="summary-subtitle">${tt} total tasks${sn}</div>
+                </div>
+                <div class="summary-card" style="cursor: pointer;" onclick="document.querySelector('[data-filter=\\'overdue\\']').click()">
+                    <div class="card-icon">⚠️</div>
+                    <h3>Overdue Tasks</h3>
+                    <div class="summary-value" style="color: #f56565;">${ot.length}</div>
+                    <div class="summary-subtitle">Needs attention</div>
+                </div>
+                <div class="summary-card" style="cursor: pointer;" onclick="document.querySelector('[data-filter=\\'week\\']').click()">
+                    <div class="card-icon">📅</div>
+                    <h3>Due This Week</h3>
+                    <div class="summary-value">${dw.length}</div>
+                    <div class="summary-subtitle">Upcoming deadlines</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">✅</div>
+                    <h3>Completion Rate</h3>
+                    <div class="summary-value">${cr}%</div>
+                    <div class="summary-subtitle">${ct} of ${tt} completed</div>
+                </div>
+            `;
+        }
+        
+        function renderPriorityPanels(){
+            const fts=getFilteredTasks(),today=new Date();
+            today.setHours(0,0,0,0);
+            
+            const ot=fts.filter(task=>{
+                if(!task.deadline||task.status==='completed')return false;
+                const d=new Date(task.deadline);
+                d.setHours(0,0,0,0);
+                return d<today;
+            }).sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+            
+            const week=new Date(today);
+            week.setDate(week.getDate()+7);
+            const dw=fts.filter(task=>{
+                if(!task.deadline||task.status==='completed')return false;
+                const d=new Date(task.deadline);
+                d.setHours(0,0,0,0);
+                return d>=today&&d<=week;
+            }).sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+            
+            const hp=fts.filter(task=>task.priority==='high'&&task.status==='pending');
+            
+            let html=`
+                <div class="priority-panel">
+                    <h2>🚨 Overdue Items (${ot.length})</h2>
+                    ${ot.length===0?'<div class="empty-state" style="padding: 20px;">No overdue tasks!</div>':''}
+                    ${ot.slice(0,10).map(task=>{
+                        const p=projects.find(p=>p.id===task.projectId);
+                        const days=Math.floor((today-new Date(task.deadline))/(1000*60*60*24));
+                        return`<div class="priority-item critical">
+                            <div class="item-title">${esc(task.name)}</div>
+                            <div class="item-meta">
+                                <span>👤 ${esc(task.owner)||'Unassigned'}</span>
+                                <span>📂 ${esc(p?.name||'Unknown')}</span>
+                                <span style="color: #f56565; font-weight: 700;">⏰ ${days} day${days>1?'s':''} overdue</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="priority-panel">
+                    <h2>📅Due This Week (${dw.length})</h2>
+                    ${dw.length===0?'<div class="empty-state" style="padding: 20px;">Nothing due this week</div>':''}
+                    ${dw.slice(0,10).map(task=>{
+                        const p=projects.find(p=>p.id===task.projectId);
+                        return`<div class="priority-item info">
+                            <div class="item-title">${esc(task.name)}</div>
+                            <div class="item-meta">
+                                <span>👤 ${esc(task.owner)||'Unassigned'}</span>
+                                <span>📂 ${esc(p?.name||'Unknown')}</span>
+                                <span>📅 ${formatDate(task.deadline)}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="priority-panel">
+                    <h2>🎯 High Priority Pending (${hp.length})</h2>
+                    ${hp.length===0?'<div class="empty-state" style="padding: 20px;">No high priority pending</div>':''}
+                    ${hp.slice(0,10).map(task=>{
+                        const p=projects.find(p=>p.id===task.projectId);
+                        return`<div class="priority-item warning">
+                            <div class="item-title">${esc(task.name)}</div>
+                            <div class="item-meta">
+                                <span>👤 ${esc(task.owner)||'Unassigned'}</span>
+                                <span>📂 ${esc(p?.name||'Unknown')}</span>
+                                ${task.deadline?`<span>📅 ${formatDate(task.deadline)}</span>`:''}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+            
+            document.getElementById('prioritySection').innerHTML=html;
+        }
+        
+        function renderCharts(){
+            const fts=getFilteredTasks();
+            Object.values(charts).forEach(c=>c?.destroy());
+            
+            const sc={
+                pending:fts.filter(t=>t.status==='pending').length,
+                ongoing:fts.filter(t=>t.status==='ongoing').length,
+                completed:fts.filter(t=>t.status==='completed').length,
+                onhold:fts.filter(t=>t.status==='onhold').length
+            };
+            
+            charts.status=new Chart(document.getElementById('statusChart'),{
+                type:'doughnut',
+                data:{
+                    labels:['Pending','Ongoing','Completed','On Hold'],
+                    datasets:[{
+                        data:[sc.pending,sc.ongoing,sc.completed,sc.onhold],
+                        backgroundColor:['#fed7d7','#bee3f8','#c6f6d5','#e2e8f0']
+                    }]
+                },
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:true,
+                    plugins:{
+                        title:{display:true,text:'Tasks by Status',font:{size:16}},
+                        legend:{position:'bottom'}
+                    }
+                }
+            });
+            
+            const pc={
+                high:fts.filter(t=>t.priority==='high').length,
+                medium:fts.filter(t=>t.priority==='medium').length,
+                low:fts.filter(t=>t.priority==='low').length
+            };
+            
+            charts.priority=new Chart(document.getElementById('priorityChart'),{
+                type:'pie',
+                data:{
+                    labels:['High','Medium','Low'],
+                    datasets:[{
+                        data:[pc.high,pc.medium,pc.low],
+                        backgroundColor:['#feb2b2','#fbd38d','#9ae6b4']
+                    }]
+                },
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:true,
+                    plugins:{
+                        title:{display:true,text:'Tasks by Priority',font:{size:16}},
+                        legend:{position:'bottom'}
+                    }
+                }
+            });
+            
+            const tbp={};
+            fts.forEach(task=>{
+                const o=task.owner||'Unassigned';
+                tbp[o]=(tbp[o]||0)+1;
+            });
+            const tp=Object.entries(tbp).sort((a,b)=>b[1]-a[1]).slice(0,10);
+            
+            charts.workload=new Chart(document.getElementById('workloadChart'),{
+                type:'bar',
+                data:{
+                    labels:tp.map(p=>p[0]),
+                    datasets:[{
+                        label:'Tasks',
+                        data:tp.map(p=>p[1]),
+                        backgroundColor:'#3598A1'
+                    }]
+                },
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:true,
+                    plugins:{
+                        title:{display:true,text:'Workload Distribution',font:{size:16}},
+                        legend:{display:false}
+                    },
+                    scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}
+                }
+            });
+            
+            const cbp={};
+            getFilteredProjects().forEach(project=>{
+                const pts=fts.filter(t=>t.projectId===project.id);
+                const comp=pts.filter(t=>t.status==='completed').length;
+                const tot=pts.length;
+                cbp[project.name]=tot>0?Math.round((comp/tot)*100):0;
+            });
+            const tpr=Object.entries(cbp).sort((a,b)=>b[1]-a[1]).slice(0,8);
+            
+            charts.completion=new Chart(document.getElementById('completionChart'),{
+                type:'bar',
+                data:{
+                    labels:tpr.map(p=>p[0]),
+                    datasets:[{
+                        label:'Completion %',
+                        data:tpr.map(p=>p[1]),
+                        backgroundColor:'#48bb78'
+                    }]
+                },
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:true,
+                    plugins:{
+                        title:{display:true,text:'Project Completion Rates',font:{size:16}},
+                        legend:{display:false}
+                    },
+                    scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}}
+                }
+            });
+        }
+function renderCalendar(){
+            const m=currentCalendarDate.getMonth(),y=currentCalendarDate.getFullYear();
+            const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+            document.getElementById('calendarMonth').textContent=`${mn[m]} ${y}`;
+            
+            const fd=new Date(y,m,1),ld=new Date(y,m+1,0),sd=fd.getDay(),dim=ld.getDate();
+            const fts=getFilteredTasks().filter(t=>t.deadline);
+            
+            let html='';
+            ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>html+=`<div class="calendar-day-header">${d}</div>`);
+            
+            const pmd=new Date(y,m,0).getDate();
+            for(let i=sd-1;i>=0;i--)html+=`<div class="calendar-day other-month"><div class="day-number">${pmd-i}</div></div>`;
+            
+            const today=new Date();
+            today.setHours(0,0,0,0);
+            
+            for(let day=1;day<=dim;day++){
+                const cd=new Date(y,m,day),isT=cd.getTime()===today.getTime();
+                const dt=fts.filter(task=>{
+                    const dl=new Date(task.deadline);
+                    return dl.getFullYear()===y&&dl.getMonth()===m&&dl.getDate()===day;
+                });
+                
+                html+=`<div class="calendar-day ${isT?'today':''}">
+                    <div class="day-number">${day}</div>
+                    ${dt.slice(0,3).map(task=>{
+                        const p=projects.find(p=>p.id===task.projectId);
+                        const isO=cd<today&&task.status!=='completed';
+                        return`<div class="calendar-task priority-${task.priority}" style="background: ${isO?'#fed7d7':'#edf2f7'}; color: ${isO?'#742a2a':'#2d3748'};" title="${esc(task.name)} - ${esc(p?.name||'Unknown')}">${esc(task.name)}</div>`;
+                    }).join('')}
+                    ${dt.length>3?`<div class="calendar-task" style="background: #cbd5e0; color: #2d3748;">+${dt.length-3} more</div>`:''}
+                </div>`;
+            }
+            
+            const rd=42-(sd+dim);
+            for(let i=1;i<=rd;i++)html+=`<div class="calendar-day other-month"><div class="day-number">${i}</div></div>`;
+            
+            document.getElementById('calendarGrid').innerHTML=html;
+        }
+        
+        function renderKanban(){
+            const sts=['pending','ongoing','onhold','completed'];
+            const sn={pending:'Pending',ongoing:'Ongoing',onhold:'On Hold',completed:'Completed'};
+            const fts=getFilteredTasks();
+            
+            let html=sts.map(st=>{
+                const ts=fts.filter(t=>t.status===st);
+                return`<div class="kanban-column" data-status="${st}">
+                    <div class="kanban-header">
+                        <div class="kanban-title">${sn[st]}</div>
+                        <div class="kanban-count">${ts.length}</div>
+                    </div>
+                    <div class="kanban-tasks">
+                        ${ts.map(task=>{
+                            const p=projects.find(p=>p.id===task.projectId);
+                            return`<div class="kanban-task" draggable="true" data-task-id="${task.id}">
+                                <div class="kanban-task-title">${esc(task.name)}</div>
+                                <div class="kanban-task-meta">
+                                    <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+                                    ${task.owner?`<span>👤 ${esc(task.owner)}</span>`:''}
+                                    ${task.deadline?`<span>📅 ${formatDate(task.deadline)}</span>`:''}
+                                    <span>📂 ${esc(p?.name||'Unknown')}</span>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('kanbanContainer').innerHTML=html;
+            setupKanbanDragDrop();
+        }
+        
+        function setupKanbanDragDrop(){
+            const ts=document.querySelectorAll('.kanban-task');
+            const cols=document.querySelectorAll('.kanban-column');
+            let dt=null;
+            
+            ts.forEach(t=>{
+                t.addEventListener('dragstart',e=>{
+                    dt=t;
+                    e.dataTransfer.effectAllowed='move';
+                    t.classList.add('dragging');
+                });
+                t.addEventListener('dragend',()=>{
+                    t.classList.remove('dragging');
+                    dt=null;
+                });
+            });
+            
+            cols.forEach(c=>{
+                c.addEventListener('dragover',e=>{
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect='move';
+                    c.style.backgroundColor='#eef2ff';
+                });
+                c.addEventListener('dragleave',()=>c.style.backgroundColor='');
+                c.addEventListener('drop',async e=>{
+                    e.preventDefault();
+                    c.style.backgroundColor='';
+                    if(!dt)return;
+                    
+                    const tid=dt.dataset.taskId;
+                    const ns=c.dataset.status;
+                    
+                    try{
+                        await updateDoc(doc(db,'tasks',tid),{status:ns});
+                    }catch(e){
+                        console.error('Error:',e);
+                        alert('Error moving task');
+                    }
+                });
+            });
+        }
+// NEW: Main renderProjects function - switches between 3 modes
+        function renderProjects(){
+            const con=document.getElementById('projectsContainer');
+            const tabCon=document.getElementById('hybridTabsContainer');
+            const sideCon=document.getElementById('sidebarLayout');
+            
+            con.style.display='none';
+            tabCon.classList.remove('active');
+            sideCon.classList.remove('active');
+            
+            if(projectNavMode==='stacked'){
+                con.style.display='flex';
+                renderStackedProjects();
+            }else if(projectNavMode==='tabs'){
+                tabCon.classList.add('active');
+                renderTabsView();
+            }else if(projectNavMode==='sidebar'){
+                sideCon.classList.add('active');
+                renderSidebarView();
+            }
+        }
+        
+        // NEW: Render stacked view (original project cards)
+        function renderStackedProjects(){
+            const con=document.getElementById('projectsContainer');
+            let fps=getFilteredProjects();
+            
+            if(searchQuery){
+                fps=fps.filter(p=>{
+                    const pm=p.name.toLowerCase().includes(searchQuery);
+                    const apt=[...p.tasks,...p.subcategories.flatMap(s=>s.tasks)];
+                    const tm=apt.some(t=>
+                        t.name.toLowerCase().includes(searchQuery)||
+                        (t.description&&t.description.toLowerCase().includes(searchQuery))||
+                        (t.owner&&t.owner.toLowerCase().includes(searchQuery))
+                    );
+                    return pm||tm;
+                });
+            }
+            
+            if(currentFilter!=='all'){
+                const fts=getFilteredTasks();
+                const pids=new Set(fts.map(t=>t.projectId));
+                fps=fps.filter(p=>pids.has(p.id));
+            }
+            
+            if(fps.length===0){
+                con.innerHTML='<div class="empty-state"><p>No projects match</p></div>';
+                return;
+            }
+            
+            con.innerHTML=fps.map(p=>{
+                const isE=expandedProjects.has(p.id);
+                return`<div class="project-card ${isE?'expanded':''} ${p.archived?'archived':''}" data-project-id="${p.id}">
+                    <div class="project-header">
+                        <div class="project-title">
+                            <h2>${esc(p.name)} ${p.archived?'(Archived)':''}</h2>
+                            <span class="priority-badge priority-${p.priority}">${p.priority}</span>
+                            ${p.owner?`<span class="owner-badge" style="cursor: pointer;" onclick="filterByOwner('${esc(p.owner)}'); event.stopPropagation();" title="Click to filter by this owner">${esc(p.owner)}</span>`:''}
+                        </div>
+                        <div class="project-actions">
+                            <button class="btn btn-edit edit-project-btn" data-project-id="${p.id}">Edit</button>
+                            <button class="btn ${p.archived?'btn-secondary':'btn-edit'} archive-project-btn" data-project-id="${p.id}">${p.archived?'Unarchive':'Archive'}</button>
+                            <button class="btn btn-danger delete-project-btn" data-project-id="${p.id}">Delete</button>
+                            <span class="expand-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="project-body ${isE?'expanded':''}">
+                        <div class="project-content">${renderProjectContent(p)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        // NEW: Render tabs view
+        function renderTabsView(){
+            let fps=getFilteredProjects();
+            
+            if(currentFilter!=='all'){
+                const fts=getFilteredTasks();
+                const pids=new Set(fts.map(t=>t.projectId));
+                fps=fps.filter(p=>pids.has(p.id));
+            }
+            
+            if(fps.length===0){
+                document.getElementById('tabsProjectContent').innerHTML='<div class="empty-state"><p>No projects match</p></div>';
+                return;
+            }
+            
+            if(!activeTabProjectId||!fps.find(p=>p.id===activeTabProjectId)){
+                activeTabProjectId=fps[0].id;
+            }
+            
+            const visibleTabs=fps.slice(0,5);
+            const dropdownTabs=fps.slice(5);
+            
+            let tabsHtml=visibleTabs.map(p=>{
+                const pt=allTasks.filter(t=>t.projectId===p.id);
+                const comp=pt.filter(t=>t.status==='completed').length;
+                const od=pt.filter(t=>{
+                    if(!t.deadline||t.status==='completed')return false;
+                    const d=new Date(t.deadline),today=new Date();
+                    d.setHours(0,0,0,0);
+                    today.setHours(0,0,0,0);
+                    return d<today;
+                }).length;
+                
+                return`<div class="project-tab ${p.id===activeTabProjectId?'active':''}" data-project-id="${p.id}">
+                    <span>${esc(p.name)}</span>
+                    ${od>0?`<span class="tab-badge">${od}</span>`:''}
+                    <span class="tab-stat">${comp}/${pt.length}</span>
+                </div>`;
+            }).join('');
+            
+            if(dropdownTabs.length>0){
+                tabsHtml+=`<div class="more-dropdown">
+                    More Projects (${dropdownTabs.length}) â–¼
+                    <div class="dropdown-menu">
+                        ${dropdownTabs.map(p=>`<div class="dropdown-item" data-project-id="${p.id}">
+                            <span>${esc(p.name)}</span>
+                            <span class="tab-stat" style="background: #edf2f7; padding: 2px 8px; border-radius: 10px; font-size: 11px;">
+                                ${allTasks.filter(t=>t.projectId===p.id&&t.status==='completed').length}/${allTasks.filter(t=>t.projectId===p.id).length}
+                            </span>
+                        </div>`).join('')}
+                    </div>
+                </div>`;
+            }
+            
+            document.getElementById('tabsNavContainer').innerHTML=tabsHtml;
+            
+            const ap=fps.find(p=>p.id===activeTabProjectId);
+            if(ap){
+                document.getElementById('tabsProjectContent').innerHTML=`
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: #2d3748; font-size: 28px; margin-bottom: 10px;">${esc(ap.name)}</h2>
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <span class="priority-badge priority-${ap.priority}">${ap.priority} priority</span>
+                            ${ap.owner?`<span class="owner-badge" style="cursor: pointer;" onclick="filterByOwner('${esc(ap.owner)}')" title="Click to filter by this owner">${esc(ap.owner)}</span>`:''}
+                            <button class="btn btn-edit edit-project-btn" data-project-id="${ap.id}">Edit Project</button>
+                            <button class="btn ${ap.archived?'btn-secondary':'btn-edit'} archive-project-btn" data-project-id="${ap.id}">${ap.archived?'Unarchive':'Archive'}</button>
+                            <button class="btn btn-danger delete-project-btn" data-project-id="${ap.id}">Delete Project</button>
+                        </div>
+                    </div>
+                    ${renderProjectContent(ap)}
+                `;
+            }
+        }
+        
+        // NEW: Render sidebar view
+        function renderSidebarView(sidebarSearchQuery=''){
+            renderSidebarProjects(sidebarSearchQuery);
+            
+            let fps=getFilteredProjects();
+            if(currentFilter!=='all'){
+                const fts=getFilteredTasks();
+                const pids=new Set(fts.map(t=>t.projectId));
+                fps=fps.filter(p=>pids.has(p.id));
+            }
+            
+            if(fps.length===0){
+                document.getElementById('sidebarMainContent').innerHTML='<div class="empty-state"><p>No projects match</p></div>';
+                return;
+            }
+            
+            if(!activeTabProjectId||!fps.find(p=>p.id===activeTabProjectId)){
+                activeTabProjectId=fps[0].id;
+            }
+            
+            const ap=fps.find(p=>p.id===activeTabProjectId);
+            if(ap){
+                document.getElementById('sidebarMainContent').innerHTML=`
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: #2d3748; font-size: 28px; margin-bottom: 10px;">${esc(ap.name)}</h2>
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <span class="priority-badge priority-${ap.priority}">${ap.priority} priority</span>
+                            ${ap.owner?`<span class="owner-badge" style="cursor: pointer;" onclick="filterByOwner('${esc(ap.owner)}')" title="Click to filter by this owner">${esc(ap.owner)}</span>`:''}
+                            <button class="btn btn-edit edit-project-btn" data-project-id="${ap.id}">Edit Project</button>
+                            <button class="btn ${ap.archived?'btn-secondary':'btn-edit'} archive-project-btn" data-project-id="${ap.id}">${ap.archived?'Unarchive':'Archive'}</button>
+                            <button class="btn btn-danger delete-project-btn" data-project-id="${ap.id}">Delete Project</button>
+                        </div>
+                    </div>
+                    ${renderProjectContent(ap)}
+                `;
+            }
+        }
+        
+        // NEW: Render sidebar project list
+        function renderSidebarProjects(sidebarSearchQuery=''){
+            let fps=getFilteredProjects();
+            
+            if(currentFilter!=='all'){
+                const fts=getFilteredTasks();
+                const pids=new Set(fts.map(t=>t.projectId));
+                fps=fps.filter(p=>pids.has(p.id));
+            }
+            
+            if(sidebarSearchQuery){
+                fps=fps.filter(p=>p.name.toLowerCase().includes(sidebarSearchQuery));
+            }
+            
+            const html=fps.map(p=>{
+                const pt=allTasks.filter(t=>t.projectId===p.id);
+                const comp=pt.filter(t=>t.status==='completed').length;
+                const od=pt.filter(t=>{
+                    if(!t.deadline||t.status==='completed')return false;
+                    const d=new Date(t.deadline),today=new Date();
+                    d.setHours(0,0,0,0);
+                    today.setHours(0,0,0,0);
+                    return d<today;
+                }).length;
+                
+                return`<div class="sidebar-project-item ${p.id===activeTabProjectId?'active':''}" data-project-id="${p.id}">
+                    <div class="sidebar-project-name">${p.archived?'📦¦ ':''}${esc(p.name)}</div>
+                    <div class="sidebar-project-stats">
+                        <span>${comp}/${pt.length} tasks</span>
+                        ${od>0?`<span style="color: #feb2b2;">${od} overdue</span>`:''}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('sidebarProjectList').innerHTML=html||'<div style="color: #cbd5e0; padding: 20px; text-align: center;">No projects</div>';
+        }
+function renderProjectContent(p){
+            let html='';
+            let gt=p.tasks||[];
+            
+            if(currentFilter!=='all'){
+                const ftids=new Set(getFilteredTasks().map(t=>t.id));
+                gt=gt.filter(t=>ftids.has(t.id));
+            }
+            
+            if(gt.length>0){
+                html+=`<div style="margin-bottom: 30px; padding: 20px; background: #f7fafc; border-radius: 12px;">
+                    <h3 style="color: #2d3748; margin-bottom: 15px;">General Tasks</h3>
+                    <div class="task-list">${gt.map(t=>renderTaskCard(p.id,null,t)).join('')}</div>
+                    <button class="btn btn-secondary btn-sm add-task-btn" data-project-id="${p.id}" data-subcategory-id="" style="margin-top: 10px;">➕ Add General Task</button>
+                </div>`;
+            }else if(currentFilter==='all'){
+                html+=`<button class="btn btn-secondary btn-sm add-task-btn" data-project-id="${p.id}" data-subcategory-id="" style="margin-bottom: 20px;">➕ Add General Task</button>`;
+            }
+            
+            if(p.subcategories.length>0){
+                html+=p.subcategories.map(sub=>{
+                    let st=sub.tasks||[];
+                    if(currentFilter!=='all'){
+                        const ftids=new Set(getFilteredTasks().map(t=>t.id));
+                        st=st.filter(t=>ftids.has(t.id));
+                    }
+                    if(currentFilter!=='all'&&st.length===0)return'';
+                    
+                    const isE=expandedSubcategories.has(sub.id);
+                    return`<div class="subcategory">
+                        <div class="subcategory-header" data-subcategory-id="${sub.id}">
+                            <h4>${esc(sub.name)}</h4>
+                            <div class="project-actions">
+                                <button class="btn btn-danger btn-sm delete-subcategory-btn" data-subcategory-id="${sub.id}">Delete</button>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="subcategory-body ${isE?'expanded':''}">
+                            <div class="subcategory-content">
+                                <div class="task-list">${st.map(t=>renderTaskCard(p.id,sub.id,t)).join('')}</div>
+                                <button class="btn btn-secondary btn-sm add-task-btn" data-project-id="${p.id}" data-subcategory-id="${sub.id}" style="margin-top: 10px;">➕ Add Task</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            
+            if(currentFilter==='all'){
+                html+=`<button class="btn btn-primary btn-sm add-subcategory-btn" data-project-id="${p.id}" style="margin-top: 20px;">➕ Add Subcategory</button>`;
+            }
+            
+            return html;
+        }
+        
+        function renderTaskCard(pid,sid,task){
+            const today=new Date();
+            today.setHours(0,0,0,0);
+            let isO=false;
+            
+            if(task.deadline&&task.status!=='completed'){
+                const d=new Date(task.deadline);
+                d.setHours(0,0,0,0);
+                isO=d<today;
+            }
+            
+            const isSel=selectedTasks.has(task.id);
+            
+            return`<div class="task-card ${isO?'overdue':''} ${isSel?'selected':''}">
+                <div class="task-header">
+                    <div class="task-title-section">
+                        <input type="checkbox" class="task-checkbox" data-task-id="${task.id}" ${isSel?'checked':''}>
+                        <h5>${esc(task.name)}</h5>
+                        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+                        <span class="status-badge status-${task.status}">${formatStatus(task.status)}</span>
+                        ${isO?'<span class="overdue-badge">OVERDUE</span>':''}
+                    </div>
+                    <div class="project-actions">
+                        <button class="btn btn-edit btn-sm edit-task-btn" data-project-id="${pid}" data-subcategory-id="${sid||''}" data-task-id="${task.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-task-btn" data-task-id="${task.id}">Delete</button>
+                    </div>
+                </div>
+                ${task.description?`<div style="font-size: 14px; color: #4a5568; margin-bottom: 12px; font-style: italic;">${esc(task.description)}</div>`:''}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 13px; color: #718096; margin-bottom: 10px;">
+                    <div><span style="font-weight: 600; color: #4a5568;">Owner:</span> ${esc(task.owner||'Unassigned')}</div>
+                    <div><span style="font-weight: 600; color: #4a5568;">Deadline:</span> ${task.deadline?formatDate(task.deadline):'No deadline'}</div>
+                </div>
+                ${task.createdBy?`<div class="metadata-text created-by">Created by ${esc(task.createdBy.name)} ${task.createdAt?'on '+formatDateTime(task.createdAt):''}</div>`:''}
+                ${task.modifiedBy && task.modifiedBy.uid !== task.createdBy?.uid?`<div class="metadata-text modified-by">Last edited by ${esc(task.modifiedBy.name)} ${task.modifiedAt?'on '+formatDateTime(task.modifiedAt):''}</div>`:''}
+                ${task.nextSteps?`<div style="font-size: 13px; color: #4a5568; margin-top: 10px;"><strong>Next Steps:</strong> ${esc(task.nextSteps)}</div>`:''}
+                ${task.notes?`<div style="font-size: 13px; color: #4a5568; margin-top: 8px;"><strong>Notes:</strong> ${esc(task.notes)}</div>`:''}
+            </div>`;
+        }
+        
+        function renderWorkload(){
+            const con=document.getElementById('workloadContainer');
+            const fts=getFilteredTasks();
+            const tbp={};
+            
+            fts.forEach(t=>{
+                const o=t.owner||'Unassigned';
+                if(!tbp[o])tbp[o]=[];
+                tbp[o].push(t);
+            });
+            
+            const ppl=Object.keys(tbp).sort();
+            
+            if(ppl.length===0){
+                con.innerHTML='<div class="empty-state"><p>No tasks assigned yet</p></div>';
+                return;
+            }
+            
+            con.innerHTML=ppl.map(p=>{
+                let ts=tbp[p];
+                
+                if(searchQuery){
+                    ts=ts.filter(t=>
+                        t.name.toLowerCase().includes(searchQuery)||
+                        (t.description&&t.description.toLowerCase().includes(searchQuery))
+                    );
+                    if(ts.length===0&&!p.toLowerCase().includes(searchQuery))return'';
+                }
+                
+                return`<div class="person-group">
+                    <div class="person-header">
+                        <div class="person-name">${esc(p)}</div>
+                        <div class="task-count-badge">${ts.length} task${ts.length!==1?'s':''}</div>
+                    </div>
+                    <div class="task-list">${ts.map(t=>renderTaskCard(t.projectId,t.subcategoryId,t)).join('')}</div>
+                </div>`;
+            }).filter(h=>h).join('');
+            
+            if(con.innerHTML===''){
+                con.innerHTML='<div class="empty-state"><p>No tasks match</p></div>';
+            }
+        }
+        
+        function updateBulkActionsBar(){
+            document.getElementById('selectedCount').textContent=selectedTasks.size;
+            document.getElementById('bulkActionsBar').classList.toggle('active',selectedTasks.size>0);
+        }
+        
+        function clearSelection(){
+            selectedTasks.clear();
+            updateBulkActionsBar();
+            renderCurrentView();
+        }
+        
+        function toggleProject(pid){
+            expandedProjects.has(pid)?expandedProjects.delete(pid):expandedProjects.add(pid);
+            renderProjects();
+        }
+        
+        function toggleSubcategory(sid){
+            expandedSubcategories.has(sid)?expandedSubcategories.delete(sid):expandedSubcategories.add(sid);
+            renderProjects();
+        }
+function openBulkModal(type){
+            const fg=document.getElementById('bulkFormGroup');
+            document.getElementById('bulkModalTitle').textContent=type==='status'?'Change Status':type==='priority'?'Change Priority':'Reassign Owner';
+            
+            if(type==='status'){
+                fg.innerHTML=`<label>New Status</label>
+                    <select id="bulkValue">
+                        <option value="pending">Pending</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="completed">Completed</option>
+                        <option value="onhold">On Hold</option>
+                    </select>`;
+            }else if(type==='priority'){
+                fg.innerHTML=`<label>New Priority</label>
+                    <select id="bulkValue">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>`;
+            }else{
+                fg.innerHTML=`<label>New Owner</label>
+                    <input type="text" id="bulkValue" placeholder="Enter owner name">`;
+            }
+            
+            document.getElementById('bulkModal').classList.add('active');
+            document.getElementById('bulkModal').dataset.type=type;
+        }
+        
+        function closeBulkModal(){
+            document.getElementById('bulkModal').classList.remove('active');
+        }
+        
+        async function handleBulkUpdate(){
+            const type=document.getElementById('bulkModal').dataset.type;
+            const val=document.getElementById('bulkValue').value;
+            
+            if(!val&&type==='owner')return alert('Please enter an owner name');
+            
+            const sb=document.getElementById('saveBulkBtn');
+            sb.disabled=true;
+            sb.textContent='Updating...';
+            
+            const uf=type==='owner'?'owner':type;
+            const upd={};
+            upd[uf]=val;
+            
+            try{
+                for(const tid of selectedTasks){
+                    await updateDoc(doc(db,'tasks',tid),upd);
+                }
+                clearSelection();
+                closeBulkModal();
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error updating tasks');
+            }finally{
+                sb.disabled=false;
+                sb.textContent='Update Tasks';
+            }
+        }
+        
+        async function bulkDelete(){
+            showConfirmModal(`Delete ${selectedTasks.size} selected tasks?`,async()=>{
+                try{
+                    for(const tid of selectedTasks){
+                        await deleteDoc(doc(db,'tasks',tid));
+                    }
+                    clearSelection();
+                    closeConfirmModal();
+                }catch(e){
+                    console.error('Error:',e);
+                    alert('Error deleting tasks');
+                }
+            });
+        }
+        
+        async function archiveProject(pid){
+            const p=projects.find(p=>p.id===pid);
+            try{
+                await updateDoc(doc(db,'projects',pid),{archived:!p.archived});
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error archiving project');
+            }
+        }
+        
+        function openProjectModal(pid=null){
+            editMode=!!pid;
+            currentProjectId=pid;
+            document.getElementById('projectModalTitle').textContent=editMode?'Edit Project':'Add New Project';
+            
+            // Populate owner datalist with unique owners
+            const ownersList = document.getElementById('projectOwnersList');
+            const uniqueOwners = [...new Set(projects.map(p => p.owner).filter(o => o))];
+            ownersList.innerHTML = uniqueOwners.map(owner => `<option value="${esc(owner)}">`).join('');
+            
+            if(editMode){
+                const p=projects.find(p=>p.id===pid);
+                document.getElementById('projectName').value=p.name;
+                document.getElementById('projectPriority').value=p.priority;
+                document.getElementById('projectOwner').value=p.owner||'';
+            }else{
+                document.getElementById('projectName').value='';
+                document.getElementById('projectPriority').value='high';
+                document.getElementById('projectOwner').value='';
+            }
+            
+            document.getElementById('projectModal').classList.add('active');
+        }
+        
+        function closeProjectModal(){
+            document.getElementById('projectModal').classList.remove('active');
+        }
+        
+        async function handleProjectSubmit(){
+            const name=document.getElementById('projectName').value.trim();
+            if(!name)return alert('Please enter a project name');
+            
+            const pr=document.getElementById('projectPriority').value;
+            const owner=document.getElementById('projectOwner').value.trim();
+            const sb=document.getElementById('saveProjectBtn');
+            sb.disabled=true;
+            sb.textContent='Saving...';
+            
+            try{
+                if(editMode){
+                    await updateDoc(doc(db,'projects',currentProjectId),{name,priority:pr,owner:owner||null});
+                }else{
+                    const nd=await addDoc(collection(db,'projects'),{
+                        name,
+                        priority:pr,
+                        owner:owner||null,
+                        archived:false,
+                        createdAt:serverTimestamp()
+                    });
+                    expandedProjects.add(nd.id);
+                    activeTabProjectId=nd.id;
+                }
+                closeProjectModal();
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error saving project');
+            }finally{
+                sb.disabled=false;
+                sb.textContent='Save Project';
+            }
+        }
+        
+        function editProject(pid){
+            openProjectModal(pid);
+        }
+        
+        async function deleteProject(pid){
+            const p=projects.find(p=>p.id===pid);
+            showConfirmModal(`Delete "${p.name}"? All subcategories and tasks will be removed.`,async()=>{
+                try{
+                    for(const sub of p.subcategories){
+                        for(const t of sub.tasks){
+                            await deleteDoc(doc(db,'tasks',t.id));
+                        }
+                        await deleteDoc(doc(db,'subcategories',sub.id));
+                    }
+                    for(const t of p.tasks){
+                        await deleteDoc(doc(db,'tasks',t.id));
+                    }
+                    await deleteDoc(doc(db,'projects',pid));
+                    
+                    if(activeTabProjectId===pid){
+                        const fps=getFilteredProjects();
+                        activeTabProjectId=fps.length>0?fps[0].id:null;
+                    }
+                    
+                    closeConfirmModal();
+                }catch(e){
+                    console.error('Error:',e);
+                    alert('Error deleting project');
+                }
+            });
+        }
+        
+        function openSubcategoryModal(pid){
+            currentProjectId=pid;
+            document.getElementById('subcategoryName').value='';
+            document.getElementById('subcategoryModal').classList.add('active');
+        }
+        
+        function closeSubcategoryModal(){
+            document.getElementById('subcategoryModal').classList.remove('active');
+        }
+        
+        async function handleSubcategorySubmit(){
+            const name=document.getElementById('subcategoryName').value.trim();
+            if(!name)return alert('Please enter a subcategory name');
+            
+            const sb=document.getElementById('saveSubcategoryBtn');
+            sb.disabled=true;
+            sb.textContent='Saving...';
+            
+            try{
+                const nd=await addDoc(collection(db,'subcategories'),{
+                    name,
+                    projectId:currentProjectId,
+                    createdAt:serverTimestamp()
+                });
+                expandedSubcategories.add(nd.id);
+                closeSubcategoryModal();
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error saving subcategory');
+            }finally{
+                sb.disabled=false;
+                sb.textContent='Save';
+            }
+        }
+        
+        async function deleteSubcategory(sid){
+            showConfirmModal('Delete this subcategory and all its tasks?',async()=>{
+                try{
+                    const tsd=allTasks.filter(t=>t.subcategoryId===sid);
+                    for(const t of tsd){
+                        await deleteDoc(doc(db,'tasks',t.id));
+                    }
+                    await deleteDoc(doc(db,'subcategories',sid));
+                    closeConfirmModal();
+                }catch(e){
+                    console.error('Error:',e);
+                    alert('Error deleting subcategory');
+                }
+            });
+        }
+function openTaskModal(pid,sid=null,tid=null){
+            currentProjectId=pid;
+            currentSubcategoryId=sid;
+            currentTaskId=tid;
+            editMode=!!tid;
+            
+            document.getElementById('taskModalTitle').textContent=editMode?'Edit Task':'Add New Task';
+            
+            if(editMode){
+                const t=allTasks.find(t=>t.id===tid);
+                document.getElementById('taskName').value=t.name;
+                document.getElementById('taskDescription').value=t.description||'';
+                document.getElementById('taskStatus').value=t.status;
+                document.getElementById('taskPriority').value=t.priority;
+                document.getElementById('taskOwner').value=t.owner||'';
+                document.getElementById('taskDeadline').value=t.deadline||'';
+                document.getElementById('taskNextSteps').value=t.nextSteps||'';
+                document.getElementById('taskNotes').value=t.notes||'';
+            }else{
+                document.getElementById('taskName').value='';
+                document.getElementById('taskDescription').value='';
+                document.getElementById('taskStatus').value='pending';
+                document.getElementById('taskPriority').value='high';
+                document.getElementById('taskOwner').value='';
+                document.getElementById('taskDeadline').value='';
+                document.getElementById('taskNextSteps').value='';
+                document.getElementById('taskNotes').value='';
+            }
+            
+            document.getElementById('taskModal').classList.add('active');
+        }
+        
+        function closeTaskModal(){
+            document.getElementById('taskModal').classList.remove('active');
+        }
+        
+        async function handleTaskSubmit(){
+            const name=document.getElementById('taskName').value.trim();
+            if(!name)return alert('Please enter a task name');
+            
+            const sb=document.getElementById('saveTaskBtn');
+            sb.disabled=true;
+            sb.textContent='Saving...';
+            
+            const td={
+                name,
+                description:document.getElementById('taskDescription').value.trim(),
+                status:document.getElementById('taskStatus').value,
+                priority:document.getElementById('taskPriority').value,
+                owner:document.getElementById('taskOwner').value.trim(),
+                deadline:document.getElementById('taskDeadline').value||null,
+                nextSteps:document.getElementById('taskNextSteps').value.trim(),
+                notes:document.getElementById('taskNotes').value.trim(),
+                projectId:currentProjectId,
+                subcategoryId:currentSubcategoryId||null
+            };
+            
+            try{
+                if(editMode){
+                    await updateDoc(doc(db,'tasks',currentTaskId),td);
+                }else{
+                    td.createdAt=serverTimestamp();
+                    await addDoc(collection(db,'tasks'),td);
+                }
+                closeTaskModal();
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error saving task');
+            }finally{
+                sb.disabled=false;
+                sb.textContent='Save Task';
+            }
+        }
+        
+        function editTask(pid,sid,tid){
+            openTaskModal(pid,sid,tid);
+        }
+        
+        async function deleteTask(tid){
+            showConfirmModal('Delete this task?',async()=>{
+                try{
+                    await deleteDoc(doc(db,'tasks',tid));
+                    selectedTasks.delete(tid);
+                    updateBulkActionsBar();
+                    closeConfirmModal();
+                }catch(e){
+                    console.error('Error:',e);
+                    alert('Error deleting task');
+                }
+            });
+        }
+        
+        function openTitleModal(){
+            document.getElementById('titleModal').classList.add('active');
+            document.getElementById('newTitleInput').value=dashboardTitle;
+        }
+        
+        function closeTitleModal(){
+            document.getElementById('titleModal').classList.remove('active');
+        }
+        
+        async function handleTitleSubmit(){
+            const nt=document.getElementById('newTitleInput').value.trim();
+            if(!nt)return alert('Please enter a title');
+            
+            const sb=document.getElementById('saveTitleBtn');
+            sb.disabled=true;
+            sb.textContent='Saving...';
+            
+            try{
+                const ss=await getDocs(collection(db,'settings'));
+                let sid=null;
+                ss.forEach(d=>{
+                    if(d.data().key==='dashboard_title')sid=d.id;
+                });
+                
+                if(sid){
+                    await updateDoc(doc(db,'settings',sid),{value:nt});
+                }else{
+                    await addDoc(collection(db,'settings'),{
+                        key:'dashboard_title',
+                        value:nt
+                    });
+                }
+                
+                dashboardTitle=nt;
+                document.getElementById('dashboardTitle').textContent=dashboardTitle;
+                closeTitleModal();
+            }catch(e){
+                console.error('Error:',e);
+                alert('Error saving title');
+            }finally{
+                sb.disabled=false;
+                sb.textContent='Save Title';
+            }
+        }
+        
+        function showConfirmModal(msg,cb){
+            document.getElementById('confirmMessage').textContent=msg;
+            document.getElementById('confirmModal').classList.add('active');
+            confirmCallback=cb;
+        }
+        
+        function closeConfirmModal(){
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback=null;
+        }
+        
+        async function handleConfirmDelete(){
+            if(!confirmCallback)return;
+            
+            const cb=document.getElementById('confirmDeleteBtn');
+            cb.disabled=true;
+            cb.textContent='Deleting...';
+            
+            try{
+                await confirmCallback();
+            }catch(e){
+                console.error('Error:',e);
+            }finally{
+                cb.disabled=false;
+                cb.textContent='Confirm';
+            }
+        }
+        
+        // Utility functions
+        function esc(text){
+            if(!text)return'';
+            const div=document.createElement('div');
+            div.textContent=text;
+            return div.innerHTML;
+        }
+        
+        // Filter projects by owner
+        function filterByOwner(owner){
+            filterOwner = owner;
+            currentFilter = 'all';
+            
+            // Update UI
+            document.querySelectorAll('.quick-filter').forEach(b=>b.classList.remove('active'));
+            
+            const ownerBtn = document.getElementById('ownerFilterBtn');
+            ownerBtn.style.display = 'inline-block';
+            ownerBtn.classList.add('active');
+            document.getElementById('ownerFilterText').textContent = owner;
+            
+            renderCurrentView();
+        }
+        
+        function formatStatus(st){
+            const m={
+                'pending':'Pending',
+                'ongoing':'Ongoing',
+                'completed':'Completed',
+                'onhold':'On Hold'
+            };
+            return m[st]||st;
+        }
+        
+        function formatDate(ds){
+            if(!ds)return'';
+            const d=new Date(ds);
+            return d.toLocaleDateString('en-US',{
+                year:'numeric',
+                month:'short',
+                day:'numeric'
+            });
+        }
+        
+        function formatDateTime(timestamp){
+            if(!timestamp)return'';
+            let date;
+            // Handle Firestore Timestamp
+            if(timestamp.toDate){
+                date = timestamp.toDate();
+            }else if(timestamp.seconds){
+                date = new Date(timestamp.seconds * 1000);
+            }else{
+                date = new Date(timestamp);
+            }
+            return date.toLocaleDateString('en-US',{
+                year:'numeric',
+                month:'short',
+                day:'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Initialize the app
+        // Note: init() is called by auth.onAuthStateChanged when user signs in
+// ============================================
+        // COMMUNICATIONS TRACKER - PHASE 1
+        // ============================================
+        
+        let communications = [];
+        let currentCommId = null;
+        let editCommMode = false;
+        
+        // Setup communications event listeners
+        function setupCommEventListeners() {
+            console.log('setupCommEventListeners called');
+            // Add communication buttons
+            const addCommBtn = document.getElementById('addCommBtn');
+            const addCommBtn2 = document.getElementById('addCommBtn2');
+            console.log('Found buttons:', addCommBtn, addCommBtn2);
+            if (addCommBtn) addCommBtn.addEventListener('click', () => {
+                console.log('addCommBtn clicked');
+                openCommModal();
+            });
+            if (addCommBtn2) addCommBtn2.addEventListener('click', () => {
+                console.log('addCommBtn2 clicked');
+                openCommModal();
+            });
+            
+            // Sub-navigation for Communications view
+            document.querySelectorAll('.sub-nav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const view = e.target.dataset.commView;
+                    document.getElementById('commsDashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+                    document.getElementById('commsAll').style.display = view === 'all' ? 'block' : 'none';
+                });
+            });
+            
+            // Calendar filter buttons
+            document.querySelectorAll('.calendar-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.calendar-filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const filter = e.target.dataset.calFilter;
+                    filterCalendarItems(filter);
+                });
+            });
+            
+            // Custom channel toggle
+            const chOther = document.getElementById('ch_other');
+            if (chOther) {
+                chOther.addEventListener('change', (e) => {
+                    document.getElementById('customChannel').style.display = e.target.checked ? 'block' : 'none';
+                });
+            }
+            
+            // Modal close on background click
+            const commModal = document.getElementById('commModal');
+            if (commModal) {
+                commModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'commModal') closeCommModal();
+                });
+            }
+            
+            // Form submission
+            const commForm = document.getElementById('commForm');
+            if (commForm) {
+                commForm.addEventListener('submit', handleCommSubmit);
+            }
+        }
+              
+        // Render all communications views
+        function renderCommunications() {
+            if (currentView === 'communications') {
+                renderCommDashboard();
+                renderCommAllTable();
+            }
+            if (currentView === 'calendar') {
+                updateCalendarWithComms();
+            }
+        }
+        
+        // Render communications dashboard
+function renderCommDashboard() {
+    const summaryGrid = document.getElementById('commsSummaryGrid');
+    if (!summaryGrid) return;
+
+    const pending = communications.filter(c => 
+        !c.contentReceived || !c.contentApproved || !c.designsReceived || !c.designsApproved
+    ).length;
+
+    const inReview = communications.filter(c => c.status === 'in_review').length;
+
+    // --- Calculate start and end of the current week (Monday â†’ Sunday) ---
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startOfWeek = new Date(today);
+    const day = startOfWeek.getDay(); // Sunday = 0, Monday = 1, etc.
+    const diffToMonday = day === 0 ? -6 : 1 - day; // handle Sunday as end of week
+    startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    // ---------------------------------------------------------------
+
+    const scheduledWeek = communications.filter(c => {
+        if (!c.date) return false;
+        const commDate = new Date(c.date);
+        return commDate >= startOfWeek && commDate <= endOfWeek && c.status === 'scheduled';
+    }).length;
+
+    const sentMonth = communications.filter(c => {
+        if (!c.date || c.status !== 'sent') return false;
+        const commDate = new Date(c.date);
+        return commDate.getMonth() === today.getMonth() && commDate.getFullYear() === today.getFullYear();
+    }).length;
+
+    summaryGrid.innerHTML = `
+        <div class="summary-card">
+            <div class="card-icon">📝</div>
+            <h3>Pending Content</h3>
+            <div class="summary-value">${pending}</div>
+            <div class="summary-subtitle">Awaiting content/design</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">⏳</div>
+            <h3>In Review</h3>
+            <div class="summary-value">${inReview}</div>
+            <div class="summary-subtitle">Awaiting approval</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">📅</div>
+            <h3>Scheduled This Week</h3>
+            <div class="summary-value">${scheduledWeek}</div>
+            <div class="summary-subtitle">Ready to send</div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">✅</div>
+            <h3>Sent This Month</h3>
+            <div class="summary-value">${sentMonth}</div>
+            <div class="summary-subtitle">Successfully delivered</div>
+        </div>
+    `;
+
+        renderRecentCommsTable();
+}
+            
+ // ---- helper used by both tables (handles Timestamp or string) ----
+function commEffectiveDate(c) {
+    const v = (c && (c.date || c.createdAt)) || null;
+    if (!v) return new Date(0);
+    if (typeof v.toDate === 'function') return v.toDate(); // Firestore Timestamp
+    return new Date(v);
+}
+
+// ---- Dashboard: Recent Communications (SORT by scheduled date, then take top 10) ----
+function renderRecentCommsTable() {
+    const sorted = [...communications].sort((a, b) => commEffectiveDate(b) - commEffectiveDate(a));
+    const recent = sorted.slice(0, 10);
+    renderCommTable('commsRecentTable', recent);
+}
+
+// ---- All Communications (SORT by scheduled date) ----
+function renderCommAllTable() {
+  const sorted = [...communications].sort((a, b) => commEffectiveDate(b) - commEffectiveDate(a));
+  renderCommTable('commsAllTable', sorted);
+}
+
+// ---- Generic table renderer (NO sorting here; it renders what it receives) ----
+function renderCommTable(containerId, comms) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (comms.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No communications yet. Click "+ New Communication" to get started!</p></div>';
+    return;
+  }
+
+  const html = `
+    <table class="comms-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Subject</th>
+          <th>Workflow Status</th>
+          <th>Send Status</th>
+          <th>Channels</th>
+          <th>Audience</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${comms.map(comm => renderCommRow(comm)).join('')}
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
+            
+            // Add click handlers for expand/collapse
+            container.querySelectorAll('tbody tr:not(.details-row)').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        toggleCommDetails(row.dataset.commId);
+                    }
+                });
+            });
+            
+            // Add click handlers for edit buttons
+            container.querySelectorAll('.edit-comm-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editComm(btn.dataset.commId);
+                });
+            });
+            
+            // Add click handlers for delete buttons
+            container.querySelectorAll('.delete-comm-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteComm(btn.dataset.commId);
+                });
+            });
+        }
+        
+        // Render individual communication row
+        function renderCommRow(comm) {
+    const contentStatus = comm.contentApproved ? 'approved' : (comm.contentReceived ? 'received' : 'waiting');
+    const designStatus = comm.designsApproved ? 'approved' : (comm.designsReceived ? 'received' : 'waiting');
+    
+    const channels = Array.isArray(comm.channels) ? comm.channels : [];
+    
+    // ADD THESE LINES:
+    const campaign = comm.campaignId ? campaigns.find(c => c.id === comm.campaignId) : null;
+    
+    return `
+        <tr data-comm-id="${comm.id}">
+            <td style="white-space: nowrap;">${formatCommDate(comm.date)}</td>
+            <td>
+                <strong>${esc(comm.subject)}</strong>
+                ${campaign ? `<div style="font-size: 11px; color: #667eea; margin-top: 4px;">Campaign: ${esc(campaign.name)}</div>` : ''}
+            </td>
+                    <td>
+                        <div class="workflow-status tooltip-trigger">
+                            <div class="workflow-item">
+                                <span class="workflow-icon">${contentStatus === 'approved' ? '✅' : '📝'}</span>
+                                <span class="workflow-label">Content:</span>
+                                <span class="workflow-value ${contentStatus}">${formatWorkflowStatus(contentStatus)}</span>
+                                ${comm.contentOwner ? `<span class="workflow-owner">(${esc(comm.contentOwner)})</span>` : ''}
+                            </div>
+                            <div class="workflow-item">
+                                <span class="workflow-icon">${designStatus === 'approved' ? '✅' : '🎨'}</span>
+                                <span class="workflow-label">Design:</span>
+                                <span class="workflow-value ${designStatus}">${formatWorkflowStatus(designStatus)}</span>
+                            </div>
+                            
+                            ${(comm.designsRequired || comm.approvalNotes) ? `
+                            <div class="tooltip-content">
+                                ${comm.designsRequired ? `
+                                <div class="tooltip-section">
+                                    <div class="tooltip-label">Design Requirements</div>
+                                    <div class="tooltip-text">${esc(comm.designsRequired)}</div>
+                                </div>
+                                ` : ''}
+                                ${comm.approvalNotes ? `
+                                <div class="tooltip-section">
+                                    <div class="tooltip-label">Approval Notes</div>
+                                    <div class="tooltip-text">${esc(comm.approvalNotes)}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </td>
+                    <td><span class="main-status-badge main-status-${comm.status}">${formatMainStatus(comm.status)}</span></td>
+                    <td>
+                        ${channels.map(ch => {
+                            const channelClass = ch === 'email' ? 'badge-email' : ch === 'purespace' ? 'badge-purespace' : 'badge-other';
+                            return `<span class="badge ${channelClass}">${esc(ch)}</span>`;
+                        }).join('')}
+                    </td>
+                    <td>${esc(comm.audience)}</td>
+                    <td onclick="event.stopPropagation()">
+                        <button class="btn btn-edit btn-sm edit-comm-btn" data-comm-id="${comm.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-comm-btn" data-comm-id="${comm.id}">Delete</button>
+                    </td>
+                </tr>
+                <tr class="details-row" id="details-${comm.id}">
+                    <td colspan="7">
+                        <div class="details-content">
+                            ${comm.notes ? `
+                            <div class="details-section">
+                                <div class="detail-label">General Notes</div>
+                                <div class="detail-value">${esc(comm.notes)}</div>
+                            </div>
+                            ` : '<div class="details-section"><div class="detail-value" style="color: #94a3b8;">No additional notes</div></div>'}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Toggle communication details row
+        function toggleCommDetails(commId) {
+            const detailsRow = document.getElementById(`details-${commId}`);
+            const allDetailsRows = document.querySelectorAll('.details-row');
+            const allTableRows = document.querySelectorAll('.comms-table tbody tr:not(.details-row)');
+            
+            allDetailsRows.forEach(row => {
+                if (row.id !== `details-${commId}`) {
+                    row.classList.remove('show');
+                }
+            });
+            
+            allTableRows.forEach(row => {
+                if (row.dataset.commId !== commId) {
+                    row.classList.remove('expanded');
+                }
+            });
+            
+            detailsRow.classList.toggle('show');
+            const mainRow = document.querySelector(`tr[data-comm-id="${commId}"]`);
+            if (mainRow) {
+                mainRow.classList.toggle('expanded');
+            }
+        }
+        
+        // Open communication modal
+        function openCommModal(commId = null) {
+            console.log('openCommModal called', commId);
+            editCommMode = !!commId;
+            currentCommId = commId;
+            
+            const modal = document.getElementById('commModal');
+            const title = document.getElementById('commModalTitle');
+            
+            if (!modal) {
+                console.error('Modal not found!');
+                return;
+            }
+            
+            console.log('Modal found, setting title');
+            title.textContent = editCommMode ? 'Edit Communication' : 'New Communication';
+            
+            if (editCommMode) {
+                const comm = communications.find(c => c.id === commId);
+                if (comm) populateCommForm(comm);
+            } else {
+                document.getElementById('commForm').reset();
+                document.getElementById('customChannel').style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+            console.log('Modal should be visible now');
+        }
+        
+        // Close communication modal
+        function closeCommModal() {
+            const modal = document.getElementById('commModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.getElementById('commForm').reset();
+                document.getElementById('customChannel').style.display = 'none';
+                currentCommId = null;
+                editCommMode = false;
+            }
+        }
+        
+        // Populate form with existing communication data
+        function populateCommForm(comm) {
+            document.getElementById('commDate').value = comm.date || '';
+            document.getElementById('commType').value = comm.type || 'announcement';
+            document.getElementById('commSubject').value = comm.subject || '';
+            document.getElementById('commAudience').value = comm.audience || '';
+            document.getElementById('commStatus').value = comm.status || 'idea';
+            document.getElementById('commCampaign').value = comm.campaignId || '';
+            document.getElementById('commContentOwner').value = comm.contentOwner || '';
+            document.getElementById('commDesigns').value = comm.designsRequired || '';
+            document.getElementById('contentReceived').checked = comm.contentReceived || false;
+            document.getElementById('contentApproved').checked = comm.contentApproved || false;
+            document.getElementById('designsReceived').checked = comm.designsReceived || false;
+            document.getElementById('designsApproved').checked = comm.designsApproved || false;
+            document.getElementById('commApprovalNotes').value = comm.approvalNotes || '';
+            document.getElementById('commNotes').value = comm.notes || '';
+            
+            // Populate channels
+            document.querySelectorAll('.channel-checkbox').forEach(cb => cb.checked = false);
+            if (Array.isArray(comm.channels)) {
+                comm.channels.forEach(channel => {
+                    if (channel === 'email') document.getElementById('ch_email').checked = true;
+                    else if (channel === 'purespace') document.getElementById('ch_purespace').checked = true;
+                    else {
+                        document.getElementById('ch_other').checked = true;
+                        document.getElementById('customChannel').value = channel;
+                        document.getElementById('customChannel').style.display = 'block';
+                    }
+                });
+            }
+        }
+        
+        // Handle communication form submission
+        async function handleCommSubmit(e) {
+            e.preventDefault();
+            
+            // Get selected channels
+            const channels = [];
+            if (document.getElementById('ch_email').checked) channels.push('email');
+            if (document.getElementById('ch_purespace').checked) channels.push('purespace');
+            if (document.getElementById('ch_other').checked) {
+                const custom = document.getElementById('customChannel').value.trim();
+                if (custom) channels.push(custom);
+            }
+            
+            if (channels.length === 0) {
+                alert('Please select at least one channel');
+                return;
+            }
+            
+            const commData = {
+                date: document.getElementById('commDate').value,
+                type: document.getElementById('commType').value,
+                subject: document.getElementById('commSubject').value.trim(),
+                channels: channels,
+                audience: document.getElementById('commAudience').value.trim(),
+                status: document.getElementById('commStatus').value,
+                contentOwner: document.getElementById('commContentOwner').value.trim(),
+                designsRequired: document.getElementById('commDesigns').value.trim(),
+                contentReceived: document.getElementById('contentReceived').checked,
+                contentApproved: document.getElementById('contentApproved').checked,
+                designsReceived: document.getElementById('designsReceived').checked,
+                designsApproved: document.getElementById('designsApproved').checked,
+                approvalNotes: document.getElementById('commApprovalNotes').value.trim(),
+                notes: document.getElementById('commNotes').value.trim(),
+                campaignId: document.getElementById('commCampaign').value || null
+            };
+            
+            const saveBtn = e.target.querySelector('button[type="submit"]');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            try {
+                if (editCommMode) {
+                    await updateDoc(doc(db, 'communications', currentCommId), commData);
+                } else {
+                    commData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'communications'), commData);
+                }
+                closeCommModal();
+            } catch (error) {
+                console.error('Error saving communication:', error);
+                alert('Error saving communication: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Communication';
+            }
+        }
+        
+        // Edit communication
+        function editComm(commId) {
+            openCommModal(commId);
+        }
+        
+        // Delete communication
+        async function deleteComm(commId) {
+            showConfirmModal('Delete this communication?', async () => {
+                try {
+                    await deleteDoc(doc(db, 'communications', commId));
+                    closeConfirmModal();
+                } catch (error) {
+                    console.error('Error deleting communication:', error);
+                    alert('Error deleting communication: ' + error.message);
+                }
+            });
+        }
+        
+        // Update calendar with communication items
+        function updateCalendarWithComms() {
+            // This integrates with your existing renderCalendar function
+            // Communications with dates will appear as calendar items
+        }
+        
+        // Filter calendar items by type
+        function filterCalendarItems(filter) {
+            document.querySelectorAll('.calendar-item').forEach(item => {
+                if (filter === 'all') {
+                    item.style.display = 'block';
+                } else if (filter === 'projects') {
+                    item.style.display = item.classList.contains('project-item') ? 'block' : 'none';
+                } else if (filter === 'comms') {
+                    item.style.display = item.classList.contains('comm-item') ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Format communication date
+        function formatCommDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        // Format workflow status
+        function formatWorkflowStatus(status) {
+            const map = {
+                waiting: 'Waiting',
+                received: 'Received',
+                approved: 'Approved'
+            };
+            return map[status] || status;
+        }
+        
+        // Format main status badge
+        function formatMainStatus(status) {
+            const map = {
+                idea: 'Idea',
+                content_requested: 'Content Req.',
+                in_review: 'In Review',
+                approved: 'Approved',
+                scheduled: 'Scheduled',
+                sent: 'Sent',
+                on_hold: 'On Hold'
+            };
+            return map[status] || status;
+        }
+
+// Update campaign dropdown in communication form
+function updateCampaignDropdown() {
+    const select = document.getElementById('commCampaign');
+    if (!select) return;
+    
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- No Campaign --</option>';
+    
+    campaigns.forEach(campaign => {
+        const option = document.createElement('option');
+        option.value = campaign.id;
+        option.textContent = campaign.name;
+        select.appendChild(option);
+    });
+    
+    if (currentValue && campaigns.find(c => c.id === currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+// Initialize communications tracker
+
+
+        // Initialize communications tracker
+                
+        // Update renderCurrentView to handle communications
+        const originalRenderCurrentView = renderCurrentView;
+        renderCurrentView = function() {
+            // Hide communications view first
+            document.getElementById('communicationsView').style.display = 'none';
+            
+            // Call original function
+            originalRenderCurrentView();
+            
+            // Show communications if that's the current view
+            if (currentView === 'communications') {
+                document.getElementById('summaryGrid').style.display = 'none';
+                document.getElementById('prioritySection').style.display = 'none';
+                document.getElementById('chartsSection').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'none';
+                document.getElementById('kanbanContainer').style.display = 'none';
+                document.getElementById('projectsWrapper').style.display = 'none';
+                document.getElementById('workloadContainer').style.display = 'none';
+                document.getElementById('communicationsView').style.display = 'block';
+                renderCommunications();
+            }
+        };
+        
+        // Update renderCalendar to include communications
+const originalRenderCalendar = renderCalendar;
+renderCalendar = function() {
+    originalRenderCalendar();
+
+    // Add communication items to calendar
+    communications.forEach(comm => {
+        if (!comm.date) return;
+        const commDate = new Date(comm.date);
+        const day = commDate.getDate();
+        const month = commDate.getMonth();
+        const year = commDate.getFullYear();
+
+        // Find the matching calendar day cell
+        const calendarDays = document.querySelectorAll('.calendar-day');
+        calendarDays.forEach(dayCell => {
+            const dayNumber = dayCell.querySelector('.day-number');
+            if (!dayNumber) return;
+
+            // Determine which month this cell belongs to
+            const dayText = parseInt(dayNumber.textContent);
+            const isOtherMonth = dayCell.classList.contains('other-month');
+            const currentCalendarMonth = currentCalendarDate.getMonth();
+            const cellMonth = isOtherMonth
+                ? (dayText > 15 ? currentCalendarMonth - 1 : currentCalendarMonth + 1)
+                : currentCalendarMonth;
+
+            // Match by exact day, month, and year
+            if (
+                dayText === day &&
+                cellMonth === month &&
+                year === currentCalendarDate.getFullYear()
+            ) {
+                const commItem = document.createElement('div');
+                commItem.classList.add('calendar-item', 'comm-item');
+                commItem.textContent = comm.subject;
+                commItem.title = `${comm.subject} - ${comm.audience}`;
+                dayCell.appendChild(commItem);
+            }
+        });
+    });
+       document.querySelectorAll('.calendar-task').forEach(task => {
+        task.classList.add('calendar-item', 'project-item');
+    });
+};
+
+        // ============================================
+        // CAMPAIGNS TRACKER - PHASE 2
+        // ============================================
+        
+        let campaigns = [];
+        let currentCampaignId = null;
+        let editCampaignMode = false;
+        let expandedCampaigns = new Set();
+        
+        // Setup campaign event listeners
+        function setupCampaignEventListeners() {
+            const addCampaignBtn = document.getElementById('addCampaignBtn');
+            if (addCampaignBtn) {
+                addCampaignBtn.addEventListener('click', () => openCampaignModal());
+            }
+            
+            // Campaign form submission
+            const campaignForm = document.getElementById('campaignForm');
+            if (campaignForm) {
+                campaignForm.addEventListener('submit', handleCampaignSubmit);
+            }
+            
+            // Campaign modal close on background click
+            const campaignModal = document.getElementById('campaignModal');
+            if (campaignModal) {
+                campaignModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'campaignModal') closeCampaignModal();
+                });
+            }
+            
+            // Update sub-nav to handle campaigns view
+            document.querySelectorAll('.sub-nav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const view = e.target.dataset.commView;
+                    document.getElementById('commsDashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+                    document.getElementById('commsAll').style.display = view === 'all' ? 'block' : 'none';
+                    document.getElementById('commsCampaigns').style.display = view === 'campaigns' ? 'block' : 'none';
+                    
+                    if (view === 'campaigns') {
+                        renderCampaigns();
+                    }
+                });
+            });
+            
+            // Campaign selection in communication form
+            const commCampaignSelect = document.getElementById('commCampaign');
+            if (commCampaignSelect) {
+                commCampaignSelect.addEventListener('change', (e) => {
+                    const value = e.target.value;
+                    const sequenceGroup = document.getElementById('commSequenceGroup');
+                    
+                    if (value === '__create_new__') {
+                        // Close comm modal and open campaign modal
+                        closeCommModal();
+                        openCampaignModal();
+                    } else if (value) {
+                        // Show sequence number field
+                        sequenceGroup.style.display = 'block';
+                    } else {
+                        // Hide sequence number field
+                        sequenceGroup.style.display = 'none';
+                        document.getElementById('commSequence').value = '';
+                    }
+                });
+            }
+        }
+        
+        // Setup Firebase realtime listener for campaigns
+        function setupCampaignFirebaseListener() {
+            onSnapshot(query(collection(db, 'campaigns'), orderBy('createdAt', 'desc')), (snapshot) => {
+                campaigns = [];
+                snapshot.forEach(d => {
+                    campaigns.push({ id: d.id, ...d.data() });
+                });
+                updateCampaignDropdowns();
+                if (currentView === 'communications') {
+                    const activeSubView = document.querySelector('.sub-nav-btn.active')?.dataset.commView;
+                    if (activeSubView === 'campaigns') {
+                        renderCampaigns();
+                    }
+                }
+            });
+        }
+        
+        // Update campaign dropdowns in communication form
+        function updateCampaignDropdowns() {
+            const select = document.getElementById('commCampaign');
+            if (!select) return;
+            
+            const currentValue = select.value;
+            const options = campaigns.map(c => 
+                `<option value="${c.id}">${esc(c.name)}</option>`
+            ).join('');
+            
+            select.innerHTML = `
+                <option value="">None - Standalone</option>
+                ${options}
+                <option value="__create_new__">+ Create New Campaign...</option>
+            `;
+            
+            // Restore selection if editing
+            if (currentValue && currentValue !== '__create_new__') {
+                select.value = currentValue;
+                if (currentValue) {
+                    document.getElementById('commSequenceGroup').style.display = 'block';
+                }
+            }
+        }
+        
+        // Render campaigns view
+        function renderCampaigns() {
+            const container = document.getElementById('campaignsGrid');
+            if (!container) return;
+            
+            if (campaigns.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No campaigns yet</h3><p>Click "+ New Campaign" to create your first campaign!</p></div>';
+                return;
+            }
+            
+            const html = campaigns.map(campaign => renderCampaignCard(campaign)).join('');
+            container.innerHTML = html;
+            
+            // Add event listeners for expand/collapse
+            container.querySelectorAll('.expand-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleCampaignExpand(btn.dataset.campaignId);
+                });
+            });
+            
+            // Add event listeners for edit buttons
+            container.querySelectorAll('.edit-campaign-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editCampaign(btn.dataset.campaignId);
+                });
+            });
+            
+            // Add event listeners for delete buttons
+            container.querySelectorAll('.delete-campaign-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteCampaign(btn.dataset.campaignId);
+                });
+            });
+            
+            // Add event listeners for campaign badge clicks in table
+            container.querySelectorAll('.campaign-badge').forEach(badge => {
+                badge.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Badge clicks are handled in the card
+                });
+            });
+        }
+        
+        // Render individual campaign card
+        function renderCampaignCard(campaign) {
+            const campaignComms = communications.filter(c => c.campaignId === campaign.id);
+            const totalComms = campaignComms.length;
+            const sentComms = campaignComms.filter(c => c.status === 'sent').length;
+            const scheduledComms = campaignComms.filter(c => c.status === 'scheduled').length;
+            const pendingComms = campaignComms.filter(c => 
+                c.status === 'idea' || c.status === 'content_requested' || c.status === 'in_review'
+            ).length;
+            
+            const progress = totalComms > 0 ? Math.round((sentComms / totalComms) * 100) : 0;
+            const isExpanded = expandedCampaigns.has(campaign.id);
+            
+            // Sort communications by sequence number, then date
+            const sortedComms = [...campaignComms].sort((a, b) => {
+                if (a.sequence && b.sequence) return a.sequence - b.sequence;
+                if (a.sequence) return -1;
+                if (b.sequence) return 1;
+                return new Date(a.date || 0) - new Date(b.date || 0);
+            });
+            
+            return `
+                <div class="campaign-card ${isExpanded ? 'expanded' : ''}" data-campaign-id="${campaign.id}">
+                    <div class="campaign-header">
+                        <div class="campaign-title-section">
+                            <div class="campaign-title">${esc(campaign.name)}</div>
+                            <div class="campaign-dates">
+                                ${campaign.startDate ? formatCommDate(campaign.startDate) : 'No start date'} 
+                                ${campaign.endDate ? '- ' + formatCommDate(campaign.endDate) : ''}
+                            </div>
+                            <span class="campaign-status-badge campaign-status-${campaign.status}">${formatCampaignStatus(campaign.status)}</span>
+                        </div>
+                        <div class="campaign-actions">
+                            <button class="btn btn-edit btn-sm edit-campaign-btn" data-campaign-id="${campaign.id}">Edit</button>
+                            <button class="btn btn-danger btn-sm delete-campaign-btn" data-campaign-id="${campaign.id}">Delete</button>
+                        </div>
+                    </div>
+                    
+                    ${campaign.description ? `<div class="campaign-description">${esc(campaign.description)}</div>` : ''}
+                    
+                    <div class="campaign-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%;"></div>
+                        </div>
+                        <div class="progress-text">${sentComms} of ${totalComms} sent (${progress}%)</div>
+                    </div>
+                    
+                    <div class="campaign-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">✅</span>
+                            <span><span class="stat-value">${sentComms}</span> Sent</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📅</span>
+                            <span><span class="stat-value">${scheduledComms}</span> Scheduled</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⏳</span>
+                            <span><span class="stat-value">${pendingComms}</span> Pending</span>
+                        </div>
+                    </div>
+                    
+                    <button class="expand-toggle" data-campaign-id="${campaign.id}">
+                        ${isExpanded ? '▲ Hide' : '▼ View All'} Communications (${totalComms})
+                    </button>
+                    
+                    <div class="campaign-comms ${isExpanded ? 'show' : ''}">
+                        <h4>Communications in this Campaign</h4>
+                        ${totalComms === 0 ? '<p style="color: #94a3b8; font-size: 14px; margin-top: 10px;">No communications in this campaign yet.</p>' : 
+                        renderCampaignCommsTable(sortedComms)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Render communications table within campaign card
+        function renderCampaignCommsTable(comms) {
+            return `
+                <table class="comms-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">Seq</th>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Channels</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${comms.map(comm => `
+                            <tr>
+                                <td>
+                                    ${comm.sequence ? `<span class="sequence-badge">#${comm.sequence}</span>` : '—'}
+                                </td>
+                                <td style="white-space: nowrap;">${formatCommDate(comm.date)}</td>
+                                <td><strong>${esc(comm.subject)}</strong></td>
+                                <td><span class="main-status-badge main-status-${comm.status}">${formatMainStatus(comm.status)}</span></td>
+                                <td>
+                                    ${Array.isArray(comm.channels) ? comm.channels.map(ch => {
+                                        const channelClass = ch === 'email' ? 'badge-email' : ch === 'purespace' ? 'badge-purespace' : 'badge-other';
+                                        return `<span class="badge ${channelClass}">${esc(ch)}</span>`;
+                                    }).join('') : ''}
+                                </td>
+                                <td>
+                                    <button class="btn btn-edit btn-sm" onclick="editComm('${comm.id}')">Edit</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        // Toggle campaign expand/collapse
+        function toggleCampaignExpand(campaignId) {
+            if (expandedCampaigns.has(campaignId)) {
+                expandedCampaigns.delete(campaignId);
+            } else {
+                expandedCampaigns.add(campaignId);
+            }
+            renderCampaigns();
+        }
+        
+        // Open campaign modal
+        function openCampaignModal(campaignId = null) {
+            editCampaignMode = !!campaignId;
+            currentCampaignId = campaignId;
+            
+            const modal = document.getElementById('campaignModal');
+            const title = document.getElementById('campaignModalTitle');
+            
+            if (!modal) return;
+            
+            title.textContent = editCampaignMode ? 'Edit Campaign' : 'New Campaign';
+            
+            if (editCampaignMode) {
+                const campaign = campaigns.find(c => c.id === campaignId);
+                if (campaign) populateCampaignForm(campaign);
+            } else {
+                document.getElementById('campaignForm').reset();
+            }
+            
+            modal.classList.add('active');
+        }
+        
+        // Close campaign modal
+        window.closeCampaignModal = function() {
+            const modal = document.getElementById('campaignModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.getElementById('campaignForm').reset();
+                currentCampaignId = null;
+                editCampaignMode = false;
+            }
+        };
+        
+        // Populate campaign form with existing data
+        function populateCampaignForm(campaign) {
+            document.getElementById('campaignName').value = campaign.name || '';
+            document.getElementById('campaignStartDate').value = campaign.startDate || '';
+            document.getElementById('campaignEndDate').value = campaign.endDate || '';
+            document.getElementById('campaignStatus').value = campaign.status || 'active';
+            document.getElementById('campaignDescription').value = campaign.description || '';
+            document.getElementById('campaignNotes').value = campaign.notes || '';
+        }
+        
+        // Handle campaign form submission
+        async function handleCampaignSubmit(e) {
+            e.preventDefault();
+            
+            const campaignData = {
+                name: document.getElementById('campaignName').value.trim(),
+                startDate: document.getElementById('campaignStartDate').value || null,
+                endDate: document.getElementById('campaignEndDate').value || null,
+                status: document.getElementById('campaignStatus').value,
+                description: document.getElementById('campaignDescription').value.trim(),
+                notes: document.getElementById('campaignNotes').value.trim()
+            };
+            
+            const saveBtn = e.target.querySelector('button[type="submit"]');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            try {
+                if (editCampaignMode) {
+                    await updateDoc(doc(db, 'campaigns', currentCampaignId), campaignData);
+                } else {
+                    campaignData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'campaigns'), campaignData);
+                }
+                closeCampaignModal();
+            } catch (error) {
+                console.error('Error saving campaign:', error);
+                alert('Error saving campaign: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Campaign';
+            }
+        }
+        
+        // Edit campaign
+        function editCampaign(campaignId) {
+            openCampaignModal(campaignId);
+        }
+        
+        // Delete campaign
+        async function deleteCampaign(campaignId) {
+            const campaign = campaigns.find(c => c.id === campaignId);
+            const linkedComms = communications.filter(c => c.campaignId === campaignId);
+            
+            const message = linkedComms.length > 0 
+                ? `Delete "${campaign.name}"? This will unlink ${linkedComms.length} communication(s), but they will remain in your system.`
+                : `Delete "${campaign.name}"?`;
+            
+            showConfirmModal(message, async () => {
+                try {
+                    // Unlink all communications from this campaign
+                    for (const comm of linkedComms) {
+                        await updateDoc(doc(db, 'communications', comm.id), {
+                            campaignId: null,
+                            sequence: null
+                        });
+                    }
+                    
+                    // Delete the campaign
+                    await deleteDoc(doc(db, 'campaigns', campaignId));
+                    expandedCampaigns.delete(campaignId);
+                    closeConfirmModal();
+                } catch (error) {
+                    console.error('Error deleting campaign:', error);
+                    alert('Error deleting campaign: ' + error.message);
+                }
+            });
+        }
+        
+        // Format campaign status
+        function formatCampaignStatus(status) {
+            const map = {
+                active: 'Active',
+                completed: 'Completed',
+                on_hold: 'On Hold'
+            };
+            return map[status] || status;
+        }
+        
+        // Update handleCommSubmit to include campaign data
+        const originalHandleCommSubmit = handleCommSubmit;
+        handleCommSubmit = async function(e) {
+            e.preventDefault();
+            
+            // Get selected channels
+            const channels = [];
+            if (document.getElementById('ch_email').checked) channels.push('email');
+            if (document.getElementById('ch_purespace').checked) channels.push('purespace');
+            if (document.getElementById('ch_other').checked) {
+                const custom = document.getElementById('customChannel').value.trim();
+                if (custom) channels.push(custom);
+            }
+            
+            if (channels.length === 0) {
+                alert('Please select at least one channel');
+                return;
+            }
+            
+            // Get campaign data
+            const campaignId = document.getElementById('commCampaign').value || null;
+            const sequence = document.getElementById('commSequence').value 
+                ? parseInt(document.getElementById('commSequence').value) 
+                : null;
+            
+            const commData = {
+                date: document.getElementById('commDate').value,
+                type: document.getElementById('commType').value,
+                subject: document.getElementById('commSubject').value.trim(),
+                channels: channels,
+                audience: document.getElementById('commAudience').value.trim(),
+                status: document.getElementById('commStatus').value,
+                contentOwner: document.getElementById('commContentOwner').value.trim(),
+                designsRequired: document.getElementById('commDesigns').value.trim(),
+                contentReceived: document.getElementById('contentReceived').checked,
+                contentApproved: document.getElementById('contentApproved').checked,
+                designsReceived: document.getElementById('designsReceived').checked,
+                designsApproved: document.getElementById('designsApproved').checked,
+                approvalNotes: document.getElementById('commApprovalNotes').value.trim(),
+                notes: document.getElementById('commNotes').value.trim(),
+                campaignId: campaignId && campaignId !== '__create_new__' ? campaignId : null,
+                sequence: sequence
+            };
+            
+            const saveBtn = e.target.querySelector('button[type="submit"]');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            
+            console.log("=== SAVE COMMUNICATION START ===");
+            console.log("Attempting to save:", commData);
+            console.log("editCommMode:", editCommMode);
+            try {
+                if (editCommMode) {
+                    await updateDoc(doc(db, 'communications', currentCommId), commData);
+                } else {
+                    commData.createdAt = serverTimestamp();
+                    const result = await addDoc(collection(db, "communications"), commData);
+                    console.log("addDoc returned:", result);
+                    await addDoc(collection(db, 'communications'), commData);
+                }
+                closeCommModal();
+            } catch (error) {
+                console.log("Save successful");
+                const allComms = LocalStorage.getCollection("communications");
+                console.log("Communications in localStorage:", allComms.length, allComms);
+                console.error('Error saving communication:', error);
+                alert('Error saving communication: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Communication';
+            }
+        };
+        
+        // Update populateCommForm to include campaign data
+        const originalPopulateCommForm = populateCommForm;
+        populateCommForm = function(comm) {
+            originalPopulateCommForm(comm);
+            
+            // Set campaign
+            if (comm.campaignId) {
+                document.getElementById('commCampaign').value = comm.campaignId;
+                document.getElementById('commSequenceGroup').style.display = 'block';
+                document.getElementById('commSequence').value = comm.sequence || '';
+            } else {
+                document.getElementById('commCampaign').value = '';
+                document.getElementById('commSequenceGroup').style.display = 'none';
+            }
+        };
+        
+        // Update renderCommRow to include campaign badge
+        const originalRenderCommRow = renderCommRow;
+        renderCommRow = function(comm) {
+            const originalHTML = originalRenderCommRow(comm);
+            
+            // Add campaign column if communication is linked to a campaign
+            if (comm.campaignId) {
+                const campaign = campaigns.find(c => c.id === comm.campaignId);
+                const campaignName = campaign ? campaign.name : 'Unknown Campaign';
+                const sequenceBadge = comm.sequence ? `<span class="sequence-badge">#${comm.sequence}</span>` : '';
+                
+                // Insert campaign badge after subject
+                const subjectTD = originalHTML.match(/<td><strong>.*?<\/strong><\/td>/);
+                if (subjectTD) {
+                    const newSubjectTD = subjectTD[0].replace('</strong>', `</strong><div style="margin-top: 6px;">${sequenceBadge}<span class="campaign-badge" title="${esc(campaignName)}">${esc(campaignName)}</span></div>`);
+                    return originalHTML.replace(subjectTD[0], newSubjectTD);
+                }
+            }
+            
+            return originalHTML;
+        };
+        
+        // Initialize campaigns
+        
+</script>
+</body>
+</html>
