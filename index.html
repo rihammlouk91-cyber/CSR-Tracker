@@ -620,6 +620,31 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap" rel="stylesheet">
 
+/* AUDIT LOG STYLES */
+.audit-container { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.audit-filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+.audit-filter-group { display: flex; flex-direction: column; gap: 5px; }
+.audit-filter-group label { font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; }
+.audit-filter-btn { padding: 6px 14px; border: 2px solid #e2e8f0; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; transition: all 0.3s; }
+.audit-filter-btn.active { background: #18518F; color: white; border-color: #18518F; }
+.audit-date-inputs { display: flex; gap: 10px; align-items: flex-end; }
+.audit-date-inputs input { padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; }
+.audit-search { padding: 8px 15px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; width: 300px; }
+.audit-search:focus { outline: none; border-color: #18518F; }
+.audit-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.audit-table thead { background: #f7fafc; position: sticky; top: 0; z-index: 10; }
+.audit-table th { padding: 12px 15px; text-align: left; font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+.audit-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #2d3748; vertical-align: top; }
+.audit-table tbody tr { transition: background 0.2s; }
+.audit-table tbody tr:hover { background: #f7fafc; }
+.action-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+.action-created { background: #c6f6d5; color: #22543d; }
+.action-edited { background: #fbd38d; color: #7c2d12; }
+.action-deleted { background: #fed7d7; color: #742a2a; }
+.item-type-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #e2e8f0; color: #4a5568; display: inline-block; }
+.changes-list { font-size: 12px; color: #64748b; margin: 0; padding-left: 20px; }
+.changes-list li { margin-bottom: 4px; }
+
     </style>
 </head>
 <body>
@@ -664,6 +689,7 @@
                     <button class="view-btn" data-view="projects">Projects</button>
                     <button class="view-btn" data-view="workload">Workload</button>
 <button class="view-btn" data-view="communications">📢 Communications</button>
+<button class="view-btn" data-view="audit">📋 Audit Log</button>
 </div>
                 <div class="quick-filters">
                     <button class="quick-filter active" data-filter="all">All Tasks</button>
@@ -752,6 +778,69 @@
         </div>
         
         <div class="workload-container" id="workloadContainer" style="display: none;"></div>
+
+<!-- AUDIT LOG VIEW -->
+<div class="audit-container" id="auditContainer" style="display: none;">
+    <h2 style="color: #2d3748; margin-bottom: 20px;">📋 Audit Log</h2>
+    
+    <div class="audit-filters">
+        <div class="audit-filter-group">
+            <label>Action Type</label>
+            <div style="display: flex; gap: 5px;">
+                <button class="audit-filter-btn active" data-action-filter="all">All</button>
+                <button class="audit-filter-btn" data-action-filter="created">Created</button>
+                <button class="audit-filter-btn" data-action-filter="edited">Edited</button>
+                <button class="audit-filter-btn" data-action-filter="deleted">Deleted</button>
+            </div>
+        </div>
+        
+        <div class="audit-filter-group">
+            <label>Item Type</label>
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                <button class="audit-filter-btn active" data-type-filter="all">All</button>
+                <button class="audit-filter-btn" data-type-filter="project">Projects</button>
+                <button class="audit-filter-btn" data-type-filter="subcategory">Subcategories</button>
+                <button class="audit-filter-btn" data-type-filter="task">Tasks</button>
+                <button class="audit-filter-btn" data-type-filter="communication">Communications</button>
+                <button class="audit-filter-btn" data-type-filter="campaign">Campaigns</button>
+            </div>
+        </div>
+        
+        <div class="audit-filter-group">
+            <label>Search</label>
+            <input type="text" class="audit-search" id="auditSearch" placeholder="Search by user or item name...">
+        </div>
+        
+        <div class="audit-filter-group">
+            <label>Date Range</label>
+            <div class="audit-date-inputs">
+                <input type="date" id="auditDateFrom" placeholder="From">
+                <input type="date" id="auditDateTo" placeholder="To">
+                <button class="btn btn-sm btn-secondary" id="clearDateRange">Clear</button>
+            </div>
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Item Type</th>
+                    <th>Item Name</th>
+                    <th>Changes</th>
+                </tr>
+            </thead>
+            <tbody id="auditTableBody">
+                <tr>
+                    <td colspan="6" class="empty-state">Loading audit log...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
         
         <div class="bulk-actions-bar" id="bulkActionsBar">
             <span class="bulk-count"><span id="selectedCount">0</span> selected</span>
@@ -1122,6 +1211,8 @@
 </div>
 
 <script>
+
+
         // ============================================
         // FIREBASE CONFIGURATION
         // ============================================
@@ -1148,6 +1239,14 @@
         
         // Current user state
         let currentUser = null;
+
+// Audit Log Variables
+let auditLogs = [];
+let auditActionFilter = 'all';
+let auditTypeFilter = 'all';
+let auditSearchQuery = '';
+let auditDateFrom = null;
+let auditDateTo = null;
         
         // ============================================
         // AUTHENTICATION FUNCTIONS
@@ -1213,46 +1312,107 @@
         function collection(db, collectionName) {
             return db.collection(collectionName);
         }
+
+// Log audit entry to Firebase
+async function logAudit(action, itemType, itemName, itemId, changes = null) {
+    if (!currentUser) return;
+    
+    const auditEntry = {
+        action: action, // 'created', 'edited', 'deleted'
+        itemType: itemType, // 'project', 'subcategory', 'task', 'communication', 'campaign'
+        itemName: itemName,
+        itemId: itemId,
+        changes: changes, // For edits: object with old/new values
+        userName: currentUser.displayName,
+        userEmail: currentUser.email,
+        userId: currentUser.uid,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    try {
+        await db.collection('audit_log').add(auditEntry);
+    } catch (error) {
+        console.error('Error logging audit:', error);
+    }
+}
         
         async function addDoc(collectionRef, data) {
-            const newData = {
-                ...data,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                createdBy: currentUser ? {
-                    uid: currentUser.uid,
-                    name: currentUser.displayName,
-                    email: currentUser.email,
-                    photoURL: currentUser.photoURL
-                } : null,
-                modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                modifiedBy: currentUser ? {
-                    uid: currentUser.uid,
-                    name: currentUser.displayName,
-                    email: currentUser.email
-                } : null
-            };
-            
-            const docRef = await collectionRef.add(newData);
-            return { id: docRef.id };
-        }
+    const newData = {
+        ...data,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: currentUser ? {
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            email: currentUser.email,
+            photoURL: currentUser.photoURL
+        } : null,
+        modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        modifiedBy: currentUser ? {
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            email: currentUser.email
+        } : null
+    };
+    
+    const docRef = await collectionRef.add(newData);
+    
+    // Log audit entry
+    const collectionPath = collectionRef._query._path.segments.join('/');
+    const itemType = collectionPath.split('/')[0].slice(0, -1); // Remove 's' from plural
+    await logAudit('created', itemType, data.name || data.subject || 'Untitled', docRef.id);
+    
+    return { id: docRef.id };
+}
         
         async function updateDoc(docRef, data) {
-            const updateData = {
-                ...data,
-                modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                modifiedBy: currentUser ? {
-                    uid: currentUser.uid,
-                    name: currentUser.displayName,
-                    email: currentUser.email
-                } : null
+    // Get the old data first to track changes
+    const oldDoc = await docRef.get();
+    const oldData = oldDoc.data();
+    
+    const updateData = {
+        ...data,
+        modifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        modifiedBy: currentUser ? {
+            uid: currentUser.uid,
+            name: currentUser.displayName,
+            email: currentUser.email
+        } : null
+    };
+    
+    await docRef.update(updateData);
+    
+    // Track changes
+    const changes = {};
+    Object.keys(data).forEach(key => {
+        if (oldData[key] !== data[key] && key !== 'modifiedAt' && key !== 'modifiedBy') {
+            changes[key] = {
+                old: oldData[key],
+                new: data[key]
             };
-            
-            await docRef.update(updateData);
         }
+    });
+    
+    // Log audit entry if there were actual changes
+    if (Object.keys(changes).length > 0) {
+        const collectionPath = docRef.path.split('/')[0];
+        const itemType = collectionPath.slice(0, -1); // Remove 's' from plural
+        const itemName = data.name || oldData.name || data.subject || oldData.subject || 'Untitled';
+        await logAudit('edited', itemType, itemName, docRef.id, changes);
+    }
+}
         
         async function deleteDoc(docRef) {
-            await docRef.delete();
-        }
+    // Get the data before deleting
+    const docData = (await docRef.get()).data();
+    const collectionPath = docRef.path.split('/')[0];
+    const itemType = collectionPath.slice(0, -1); // Remove 's' from plural
+    const itemName = docData.name || docData.subject || 'Untitled';
+    
+    await docRef.delete();
+    
+    // Log audit entry
+    await logAudit('deleted', itemType, itemName, docRef.id);
+}
         
         function doc(db, collectionName, docId) {
             return db.collection(collectionName).doc(docId);
@@ -1300,22 +1460,23 @@
         // Variables - Added projectNavMode, activeTabProjectId, dropdownOpen
         let projects=[],allTasks=[],dashboardTitle='📊 Project Tracker Dashboard',currentProjectId=null,currentSubcategoryId=null,currentTaskId=null,editMode=false,confirmCallback=null,expandedProjects=new Set(),expandedSubcategories=new Set(),currentView='dashboard',currentFilter='all',searchQuery='',showArchived=false,selectedTasks=new Set(),currentCalendarDate=new Date(),charts={},projectNavMode='stacked',activeTabProjectId=null,dropdownOpen=false,filterOwner=null;
 
-        async function init(){
-            try{
-                await loadAllData();
-                document.getElementById('loading').style.display='none';
-                document.getElementById('header').style.display='block';
-                renderCurrentView();
-                setupEventListeners();
-                setupRealtimeListeners();
-                setupCommEventListeners();
-                setupCampaignEventListeners();
-                setupCampaignFirebaseListener();
-            }catch(e){
-                console.error('Error:',e);
-                document.getElementById('loading').innerHTML=`<div style="color: white;"><h2>âš ï¸ Error</h2><p>${e.message}</p></div>`;
-            }
-        }
+      async function init() {
+    try {
+        await loadAllData();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('header').style.display = 'block';
+        renderCurrentView();
+        setupEventListeners();
+        setupRealtimeListeners();
+        setupCommEventListeners();
+        setupCampaignEventListeners();
+        setupCampaignFirebaseListener();
+        setupAuditListeners(); // ADD THIS LINE
+    } catch (e) {
+        console.error('Error:', e);
+        document.getElementById('loading').innerHTML = `<div style="color: white;"><h2>⚠️ Error</h2><p>${e.message}</p></div>`;
+    }
+}
         
         function setupRealtimeListeners(){
     onSnapshot(query(collection(db,'projects'),orderBy('createdAt','asc')),()=>loadAllData());
@@ -1451,7 +1612,9 @@
             if(t.classList.contains('delete-task-btn')){e.stopPropagation();deleteTask(t.dataset.taskId)}
         }
 function setupEventListeners(){
-            // Note: Auth buttons are set up in DOMContentLoaded listener above
+            // Auth buttons
+            document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
+            document.getElementById('signOutBtn').addEventListener('click', signOut);
             
             document.getElementById('addProjectBtn').addEventListener('click',()=>openProjectModal());
             document.getElementById('editTitleBtn').addEventListener('click',openTitleModal);
@@ -1571,42 +1734,46 @@ function setupEventListeners(){
             renderCurrentView();
         }
         
-        function renderCurrentView(){
-            document.getElementById('summaryGrid').style.display='none';
-            document.getElementById('prioritySection').style.display='none';
-            document.getElementById('chartsSection').style.display='none';
-            document.getElementById('calendarContainer').style.display='none';
-            document.getElementById('kanbanContainer').style.display='none';
-            document.getElementById('projectsWrapper').style.display='none';
-            document.getElementById('workloadContainer').style.display='none';
-            document.getElementById('communicationsView').style.display='none'; 
-            
-            if(currentView==='dashboard'){
-                document.getElementById('summaryGrid').style.display='grid';
-                document.getElementById('prioritySection').style.display='grid';
-                renderSummary();
-                renderPriorityPanels();
-            }else if(currentView==='analytics'){
-                document.getElementById('chartsSection').style.display='block';
-                renderCharts();
-            }else if(currentView==='calendar'){
-                document.getElementById('calendarContainer').style.display='block';
-                renderCalendar();
-            }else if(currentView==='kanban'){
-                document.getElementById('kanbanContainer').style.display='grid';
-                renderKanban();
-            }else if(currentView==='projects'){
-                document.getElementById('projectsWrapper').style.display='block';
-                renderProjects();
-            }else if(currentView==='workload'){
-                document.getElementById('workloadContainer').style.display='flex';
-                renderWorkload();
-            }else if(currentView==='communications'){ 
-
-document.getElementById('communicationsView').style.display='block';
-                renderCommunications();
-            }
-        }
+       // Find this function and add the audit container handling:
+function renderCurrentView() {
+    document.getElementById('summaryGrid').style.display = 'none';
+    document.getElementById('prioritySection').style.display = 'none';
+    document.getElementById('chartsSection').style.display = 'none';
+    document.getElementById('calendarContainer').style.display = 'none';
+    document.getElementById('kanbanContainer').style.display = 'none';
+    document.getElementById('projectsWrapper').style.display = 'none';
+    document.getElementById('workloadContainer').style.display = 'none';
+    document.getElementById('communicationsView').style.display = 'none';
+    document.getElementById('auditContainer').style.display = 'none'; // ADD THIS LINE
+    
+    if (currentView === 'dashboard') {
+        document.getElementById('summaryGrid').style.display = 'grid';
+        document.getElementById('prioritySection').style.display = 'grid';
+        renderSummary();
+        renderPriorityPanels();
+    } else if (currentView === 'analytics') {
+        document.getElementById('chartsSection').style.display = 'block';
+        renderCharts();
+    } else if (currentView === 'calendar') {
+        document.getElementById('calendarContainer').style.display = 'block';
+        renderCalendar();
+    } else if (currentView === 'kanban') {
+        document.getElementById('kanbanContainer').style.display = 'grid';
+        renderKanban();
+    } else if (currentView === 'projects') {
+        document.getElementById('projectsWrapper').style.display = 'block';
+        renderProjects();
+    } else if (currentView === 'workload') {
+        document.getElementById('workloadContainer').style.display = 'flex';
+        renderWorkload();
+    } else if (currentView === 'communications') {
+        document.getElementById('communicationsView').style.display = 'block';
+        renderCommunications();
+    } else if (currentView === 'audit') { // ADD THIS BLOCK
+        document.getElementById('auditContainer').style.display = 'block';
+        renderAuditLog();
+    }
+}
         
         function getFilteredProjects(){
             let filtered = projects.filter(p=>showArchived?p.archived:!p.archived);
@@ -2848,17 +3015,6 @@ function openTaskModal(pid,sid=null,tid=null){
             });
         }
         
-        // Set up auth button listeners IMMEDIATELY (before authentication)
-        document.addEventListener('DOMContentLoaded', function() {
-            const signInBtn = document.getElementById('googleSignInBtn');
-            const signOutBtn = document.getElementById('signOutBtn');
-            
-            if(signInBtn) signInBtn.addEventListener('click', signInWithGoogle);
-            if(signOutBtn) signOutBtn.addEventListener('click', signOut);
-            
-            console.log('Auth buttons initialized');
-        });
-        
         // Initialize the app
         // Note: init() is called by auth.onAuthStateChanged when user signs in
 // ============================================
@@ -3511,6 +3667,66 @@ renderCalendar = function() {
                     if (e.target.id === 'campaignModal') closeCampaignModal();
                 });
             }
+
+function setupAuditListeners() {
+    // Real-time listener for audit log
+    onSnapshot(
+        query(collection(db, 'audit_log'), orderBy('timestamp', 'desc')),
+        (snapshot) => {
+            auditLogs = [];
+            snapshot.forEach(doc => {
+                auditLogs.push({ id: doc.id, ...doc.data() });
+            });
+            if (currentView === 'audit') {
+                renderAuditLog();
+            }
+        }
+    );
+    
+    // Filter buttons
+    document.querySelectorAll('[data-action-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-action-filter]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            auditActionFilter = e.target.dataset.actionFilter;
+            renderAuditLog();
+        });
+    });
+    
+    document.querySelectorAll('[data-type-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-type-filter]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            auditTypeFilter = e.target.dataset.typeFilter;
+            renderAuditLog();
+        });
+    });
+    
+    // Search
+    document.getElementById('auditSearch').addEventListener('input', (e) => {
+        auditSearchQuery = e.target.value.toLowerCase();
+        renderAuditLog();
+    });
+    
+    // Date filters
+    document.getElementById('auditDateFrom').addEventListener('change', (e) => {
+        auditDateFrom = e.target.value ? new Date(e.target.value) : null;
+        renderAuditLog();
+    });
+    
+    document.getElementById('auditDateTo').addEventListener('change', (e) => {
+        auditDateTo = e.target.value ? new Date(e.target.value + 'T23:59:59') : null;
+        renderAuditLog();
+    });
+    
+    document.getElementById('clearDateRange').addEventListener('click', () => {
+        document.getElementById('auditDateFrom').value = '';
+        document.getElementById('auditDateTo').value = '';
+        auditDateFrom = null;
+        auditDateTo = null;
+        renderAuditLog();
+    });
+}
             
             // Update sub-nav to handle campaigns view
             document.querySelectorAll('.sub-nav-btn').forEach(btn => {
@@ -3603,6 +3819,91 @@ renderCalendar = function() {
                 container.innerHTML = '<div class="empty-state"><h3>No campaigns yet</h3><p>Click "+ New Campaign" to create your first campaign!</p></div>';
                 return;
             }
+
+function renderAuditLog() {
+    let filtered = [...auditLogs];
+    
+    // Filter by action type
+    if (auditActionFilter !== 'all') {
+        filtered = filtered.filter(log => log.action === auditActionFilter);
+    }
+    
+    // Filter by item type
+    if (auditTypeFilter !== 'all') {
+        filtered = filtered.filter(log => log.itemType === auditTypeFilter);
+    }
+    
+    // Filter by search query
+    if (auditSearchQuery) {
+        filtered = filtered.filter(log =>
+            log.userName.toLowerCase().includes(auditSearchQuery) ||
+            log.itemName.toLowerCase().includes(auditSearchQuery)
+        );
+    }
+    
+    // Filter by date range
+    if (auditDateFrom || auditDateTo) {
+        filtered = filtered.filter(log => {
+            if (!log.timestamp) return false;
+            const logDate = log.timestamp.toDate();
+            if (auditDateFrom && logDate < auditDateFrom) return false;
+            if (auditDateTo && logDate > auditDateTo) return false;
+            return true;
+        });
+    }
+    
+    const tbody = document.getElementById('auditTableBody');
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No audit entries match your filters.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(log => {
+        const timestamp = log.timestamp ? formatDateTime(log.timestamp) : 'Just now';
+        const actionClass = `action-${log.action}`;
+        const changesHtml = renderChanges(log.changes);
+        
+        return `
+            <tr>
+                <td style="white-space: nowrap;">${timestamp}</td>
+                <td>${esc(log.userName)}</td>
+                <td><span class="action-badge ${actionClass}">${log.action}</span></td>
+                <td><span class="item-type-badge">${formatItemType(log.itemType)}</span></td>
+                <td><strong>${esc(log.itemName)}</strong></td>
+                <td>${changesHtml}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render changes for audit entry
+function renderChanges(changes) {
+    if (!changes || Object.keys(changes).length === 0) {
+        return '<span style="color: #94a3b8;">—</span>';
+    }
+    
+    const items = Object.entries(changes).map(([field, change]) => {
+        if (typeof change === 'object' && change.old !== undefined && change.new !== undefined) {
+            return `<li><strong>${field}:</strong> "${esc(String(change.old))}" → "${esc(String(change.new))}"</li>`;
+        }
+        return `<li><strong>${field}:</strong> ${esc(String(change))}</li>`;
+    });
+    
+    return `<ul class="changes-list">${items.join('')}</ul>`;
+}
+
+// Format item type for display
+function formatItemType(type) {
+    const map = {
+        project: 'Project',
+        subcategory: 'Subcategory',
+        task: 'Task',
+        communication: 'Communication',
+        campaign: 'Campaign'
+    };
+    return map[type] || type;
+}
             
             const html = campaigns.map(campaign => renderCampaignCard(campaign)).join('');
             container.innerHTML = html;
