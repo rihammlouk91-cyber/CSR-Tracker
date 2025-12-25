@@ -1451,9 +1451,7 @@
             if(t.classList.contains('delete-task-btn')){e.stopPropagation();deleteTask(t.dataset.taskId)}
         }
 function setupEventListeners(){
-            // Auth buttons
-            document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
-            document.getElementById('signOutBtn').addEventListener('click', signOut);
+            // Note: Auth buttons are set up in DOMContentLoaded listener above
             
             document.getElementById('addProjectBtn').addEventListener('click',()=>openProjectModal());
             document.getElementById('editTitleBtn').addEventListener('click',openTitleModal);
@@ -2849,6 +2847,17 @@ function openTaskModal(pid,sid=null,tid=null){
                 minute: '2-digit'
             });
         }
+        
+        // Set up auth button listeners IMMEDIATELY (before authentication)
+        document.addEventListener('DOMContentLoaded', function() {
+            const signInBtn = document.getElementById('googleSignInBtn');
+            const signOutBtn = document.getElementById('signOutBtn');
+            
+            if(signInBtn) signInBtn.addEventListener('click', signInWithGoogle);
+            if(signOutBtn) signOutBtn.addEventListener('click', signOut);
+            
+            console.log('Auth buttons initialized');
+        });
         
         // Initialize the app
         // Note: init() is called by auth.onAuthStateChanged when user signs in
