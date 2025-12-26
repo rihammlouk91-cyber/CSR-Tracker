@@ -1356,10 +1356,15 @@ async function logAudit(action, itemType, itemName, itemId, changes = null) {
     
     const docRef = await collectionRef.add(newData);
     
-    // Log audit entry
-    const collectionPath = collectionRef._query._path.segments.join('/');
-    const itemType = collectionPath.split('/')[0].slice(0, -1); // Remove 's' from plural
-    await logAudit('created', itemType, data.name || data.subject || 'Untitled', docRef.id);
+    // Log audit entry - FIXED VERSION
+    try {
+        const collectionPath = collectionRef.path || collectionRef.id;
+        const itemType = collectionPath.replace(/s$/, ''); // Remove trailing 's'
+        await logAudit('created', itemType, data.name || data.subject || 'Untitled', docRef.id);
+    } catch (error) {
+        console.error('Audit log error:', error);
+        // Don't fail the whole operation if audit logging fails
+    }
     
     return { id: docRef.id };
 }
@@ -3670,18 +3675,15 @@ renderCalendar = function() {
 
 function setupAuditListeners() {
     // Real-time listener for audit log
-    onSnapshot(
-        query(collection(db, 'audit_log'), orderBy('timestamp', 'desc')),
-        (snapshot) => {
-            auditLogs = [];
-            snapshot.forEach(doc => {
-                auditLogs.push({ id: doc.id, ...doc.data() });
-            });
-            if (currentView === 'audit') {
-                renderAuditLog();
-            }
+    db.collection('audit_log').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+        auditLogs = [];
+        snapshot.forEach(doc => {
+            auditLogs.push({ id: doc.id, ...doc.data() });
+        });
+        if (currentView === 'audit') {
+            renderAuditLog();
         }
-    );
+    });
     
     // Filter buttons
     document.querySelectorAll('[data-action-filter]').forEach(btn => {
