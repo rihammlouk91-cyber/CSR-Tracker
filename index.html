@@ -1319,6 +1319,13 @@ let auditDateTo = null;
             }
         }
         
+        // Setup Google Sign-In button BEFORE auth check
+        document.addEventListener('DOMContentLoaded', () => {
+            // These must be set up immediately, before authentication
+            document.getElementById('googleSignInBtn')?.addEventListener('click', signInWithGoogle);
+            document.getElementById('signOutBtn')?.addEventListener('click', signOut);
+        });
+        
         // Auth state observer
         auth.onAuthStateChanged(user => {
             currentUser = user;
@@ -1640,9 +1647,7 @@ async function logAudit(action, itemType, itemName, itemId, changes = null) {
             if(t.classList.contains('delete-task-btn')){e.stopPropagation();deleteTask(t.dataset.taskId)}
         }
 function setupEventListeners(){
-            // Auth buttons
-            document.getElementById('googleSignInBtn').addEventListener('click', signInWithGoogle);
-            document.getElementById('signOutBtn').addEventListener('click', signOut);
+            // Auth buttons are now set up in DOMContentLoaded listener above
             
             document.getElementById('addProjectBtn').addEventListener('click',()=>openProjectModal());
             document.getElementById('editTitleBtn').addEventListener('click',openTitleModal);
