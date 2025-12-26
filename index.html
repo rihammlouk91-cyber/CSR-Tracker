@@ -630,12 +630,8 @@
 }
 
 .audit-container h2 {
-    background: white;
     color: #2d3748;
-    padding: 20px;
-    margin: -25px -25px 20px -25px;
-    border-radius: 12px 12px 0 0;
-    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 20px;
 }
 .audit-filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
 .audit-filter-group { display: flex; flex-direction: column; gap: 5px; }
@@ -649,9 +645,21 @@
 .audit-table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .audit-table thead { background: #f7fafc; position: sticky; top: 0; z-index: 10; }
 .audit-table th { padding: 12px 15px; text-align: left; font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-.audit-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #2d3748; vertical-align: top; }
-.audit-table tbody tr { transition: background 0.2s; }
-.audit-table tbody tr:hover { background: #f7fafc; }
+.audit-table td { 
+    padding: 15px; 
+    border-bottom: 1px solid #e2e8f0; 
+    font-size: 14px; 
+    color: #2d3748; 
+    vertical-align: top; 
+    background: white; /* ADD THIS */
+}
+.audit-table tbody tr { 
+    transition: background 0.2s; 
+    background: white; /* ADD THIS */
+}
+.audit-table tbody tr:hover { 
+    background: #f7fafc; 
+}
 .action-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
 .action-created { background: #c6f6d5; color: #22543d; }
 .action-edited { background: #fbd38d; color: #7c2d12; }
