@@ -3019,6 +3019,148 @@ function openTaskModal(pid,sid=null,tid=null){
                 minute: '2-digit'
             });
         }
+
+function setupAuditListeners() {
+    // Real-time listener for audit log
+    db.collection('audit_log').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+        auditLogs = [];
+        snapshot.forEach(doc => {
+            auditLogs.push({ id: doc.id, ...doc.data() });
+        });
+        if (currentView === 'audit') {
+            renderAuditLog();
+        }
+    });
+    
+    // Filter buttons
+    document.querySelectorAll('[data-action-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-action-filter]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            auditActionFilter = e.target.dataset.actionFilter;
+            renderAuditLog();
+        });
+    });
+    
+    document.querySelectorAll('[data-type-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-type-filter]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            auditTypeFilter = e.target.dataset.typeFilter;
+            renderAuditLog();
+        });
+    });
+    
+    // Search
+    document.getElementById('auditSearch').addEventListener('input', (e) => {
+        auditSearchQuery = e.target.value.toLowerCase();
+        renderAuditLog();
+    });
+    
+    // Date filters
+    document.getElementById('auditDateFrom').addEventListener('change', (e) => {
+        auditDateFrom = e.target.value ? new Date(e.target.value) : null;
+        renderAuditLog();
+    });
+    
+    document.getElementById('auditDateTo').addEventListener('change', (e) => {
+        auditDateTo = e.target.value ? new Date(e.target.value + 'T23:59:59') : null;
+        renderAuditLog();
+    });
+    
+    document.getElementById('clearDateRange').addEventListener('click', () => {
+        document.getElementById('auditDateFrom').value = '';
+        document.getElementById('auditDateTo').value = '';
+        auditDateFrom = null;
+        auditDateTo = null;
+        renderAuditLog();
+    });
+}
+
+function renderAuditLog() {
+    let filtered = [...auditLogs];
+    
+    // Filter by action type
+    if (auditActionFilter !== 'all') {
+        filtered = filtered.filter(log => log.action === auditActionFilter);
+    }
+    
+    // Filter by item type
+    if (auditTypeFilter !== 'all') {
+        filtered = filtered.filter(log => log.itemType === auditTypeFilter);
+    }
+    
+    // Filter by search query
+    if (auditSearchQuery) {
+        filtered = filtered.filter(log =>
+            log.userName.toLowerCase().includes(auditSearchQuery) ||
+            log.itemName.toLowerCase().includes(auditSearchQuery)
+        );
+    }
+    
+    // Filter by date range
+    if (auditDateFrom || auditDateTo) {
+        filtered = filtered.filter(log => {
+            if (!log.timestamp) return false;
+            const logDate = log.timestamp.toDate();
+            if (auditDateFrom && logDate < auditDateFrom) return false;
+            if (auditDateTo && logDate > auditDateTo) return false;
+            return true;
+        });
+    }
+    
+    const tbody = document.getElementById('auditTableBody');
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No audit entries match your filters.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(log => {
+        const timestamp = log.timestamp ? formatDateTime(log.timestamp) : 'Just now';
+        const actionClass = `action-${log.action}`;
+        const changesHtml = renderChanges(log.changes);
+        
+        return `
+            <tr>
+                <td style="white-space: nowrap;">${timestamp}</td>
+                <td>${esc(log.userName)}</td>
+                <td><span class="action-badge ${actionClass}">${log.action}</span></td>
+                <td><span class="item-type-badge">${formatItemType(log.itemType)}</span></td>
+                <td><strong>${esc(log.itemName)}</strong></td>
+                <td>${changesHtml}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render changes for audit entry
+function renderChanges(changes) {
+    if (!changes || Object.keys(changes).length === 0) {
+        return '<span style="color: #94a3b8;">—</span>';
+    }
+    
+    const items = Object.entries(changes).map(([field, change]) => {
+        if (typeof change === 'object' && change.old !== undefined && change.new !== undefined) {
+            return `<li><strong>${field}:</strong> "${esc(String(change.old))}" → "${esc(String(change.new))}"</li>`;
+        }
+        return `<li><strong>${field}:</strong> ${esc(String(change))}</li>`;
+    });
+    
+    return `<ul class="changes-list">${items.join('')}</ul>`;
+}
+
+// Format item type for display
+function formatItemType(type) {
+    const map = {
+        project: 'Project',
+        subcategory: 'Subcategory',
+        task: 'Task',
+        communication: 'Communication',
+        campaign: 'Campaign'
+    };
+    return map[type] || type;
+}
         
         // Initialize the app
         // Note: init() is called by auth.onAuthStateChanged when user signs in
@@ -3673,62 +3815,7 @@ renderCalendar = function() {
                 });
             }
 
-function setupAuditListeners() {
-    // Real-time listener for audit log
-    db.collection('audit_log').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
-        auditLogs = [];
-        snapshot.forEach(doc => {
-            auditLogs.push({ id: doc.id, ...doc.data() });
-        });
-        if (currentView === 'audit') {
-            renderAuditLog();
-        }
-    });
-    
-    // Filter buttons
-    document.querySelectorAll('[data-action-filter]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('[data-action-filter]').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            auditActionFilter = e.target.dataset.actionFilter;
-            renderAuditLog();
-        });
-    });
-    
-    document.querySelectorAll('[data-type-filter]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('[data-type-filter]').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            auditTypeFilter = e.target.dataset.typeFilter;
-            renderAuditLog();
-        });
-    });
-    
-    // Search
-    document.getElementById('auditSearch').addEventListener('input', (e) => {
-        auditSearchQuery = e.target.value.toLowerCase();
-        renderAuditLog();
-    });
-    
-    // Date filters
-    document.getElementById('auditDateFrom').addEventListener('change', (e) => {
-        auditDateFrom = e.target.value ? new Date(e.target.value) : null;
-        renderAuditLog();
-    });
-    
-    document.getElementById('auditDateTo').addEventListener('change', (e) => {
-        auditDateTo = e.target.value ? new Date(e.target.value + 'T23:59:59') : null;
-        renderAuditLog();
-    });
-    
-    document.getElementById('clearDateRange').addEventListener('click', () => {
-        document.getElementById('auditDateFrom').value = '';
-        document.getElementById('auditDateTo').value = '';
-        auditDateFrom = null;
-        auditDateTo = null;
-        renderAuditLog();
-    });
-}
+
             
             // Update sub-nav to handle campaigns view
             document.querySelectorAll('.sub-nav-btn').forEach(btn => {
@@ -3822,90 +3909,6 @@ function setupAuditListeners() {
                 return;
             }
 
-function renderAuditLog() {
-    let filtered = [...auditLogs];
-    
-    // Filter by action type
-    if (auditActionFilter !== 'all') {
-        filtered = filtered.filter(log => log.action === auditActionFilter);
-    }
-    
-    // Filter by item type
-    if (auditTypeFilter !== 'all') {
-        filtered = filtered.filter(log => log.itemType === auditTypeFilter);
-    }
-    
-    // Filter by search query
-    if (auditSearchQuery) {
-        filtered = filtered.filter(log =>
-            log.userName.toLowerCase().includes(auditSearchQuery) ||
-            log.itemName.toLowerCase().includes(auditSearchQuery)
-        );
-    }
-    
-    // Filter by date range
-    if (auditDateFrom || auditDateTo) {
-        filtered = filtered.filter(log => {
-            if (!log.timestamp) return false;
-            const logDate = log.timestamp.toDate();
-            if (auditDateFrom && logDate < auditDateFrom) return false;
-            if (auditDateTo && logDate > auditDateTo) return false;
-            return true;
-        });
-    }
-    
-    const tbody = document.getElementById('auditTableBody');
-    
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No audit entries match your filters.</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = filtered.map(log => {
-        const timestamp = log.timestamp ? formatDateTime(log.timestamp) : 'Just now';
-        const actionClass = `action-${log.action}`;
-        const changesHtml = renderChanges(log.changes);
-        
-        return `
-            <tr>
-                <td style="white-space: nowrap;">${timestamp}</td>
-                <td>${esc(log.userName)}</td>
-                <td><span class="action-badge ${actionClass}">${log.action}</span></td>
-                <td><span class="item-type-badge">${formatItemType(log.itemType)}</span></td>
-                <td><strong>${esc(log.itemName)}</strong></td>
-                <td>${changesHtml}</td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// Render changes for audit entry
-function renderChanges(changes) {
-    if (!changes || Object.keys(changes).length === 0) {
-        return '<span style="color: #94a3b8;">—</span>';
-    }
-    
-    const items = Object.entries(changes).map(([field, change]) => {
-        if (typeof change === 'object' && change.old !== undefined && change.new !== undefined) {
-            return `<li><strong>${field}:</strong> "${esc(String(change.old))}" → "${esc(String(change.new))}"</li>`;
-        }
-        return `<li><strong>${field}:</strong> ${esc(String(change))}</li>`;
-    });
-    
-    return `<ul class="changes-list">${items.join('')}</ul>`;
-}
-
-// Format item type for display
-function formatItemType(type) {
-    const map = {
-        project: 'Project',
-        subcategory: 'Subcategory',
-        task: 'Task',
-        communication: 'Communication',
-        campaign: 'Campaign'
-    };
-    return map[type] || type;
-}
             
             const html = campaigns.map(campaign => renderCampaignCard(campaign)).join('');
             container.innerHTML = html;
